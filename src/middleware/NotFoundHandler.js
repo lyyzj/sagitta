@@ -2,7 +2,7 @@
 
 const libUtil = require('util');
 const libPath = require('path');
-const libCofs = require('co-fs');
+const libFsp = require('fs-promise');
 
 class NotFoundHandler {
 
@@ -18,7 +18,7 @@ class NotFoundHandler {
       switch (this.accepts('html', 'json')) {
         case 'html':
           this.type = 'html';
-          this.body = yield libCofs.readFile(libPath.join(__dirname, '..', '..', 'public', 'templates', 'views', '404.html'));
+          this.body = yield libFsp.readFile(libPath.join(__dirname, '..', '..', 'public', 'templates', 'views', '404.html'));
           break;
         case 'json':
           this.body = {
