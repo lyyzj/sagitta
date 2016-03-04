@@ -1,43 +1,27 @@
 "use strict";
 
-const libUtil = require('util');
 const libPath = require('path');
+
+const env = require(libPath.join(__dirname, '..', 'config', 'env.json'))['env'];
+const conf = require(libPath.join(__dirname, '..', 'config', 'config.' + env + '.json'));
 
 const koa = require('koa');
 const app = koa();
 
+const serve = require('koa-static');
 require('koa-trace')(app);
 
 const logLoader = require(libPath.join(__dirname, 'logger', 'Logger.js'));
+const requestTimer = require(libPath.join(__dirname, 'middleware', 'RequestTimer.js'));
+const notFoundHandler = require(libPath.join(__dirname, 'middleware', 'NotFoundHandler.js'));
 
+// middleware
+app.use(serve(libPath.join(__dirname, '..', 'public')));
+app.use(handlebars({ root: libPath.join(__dirname, '..', 'public', 'templates'), defaultLayout: 'main', extension: [ 'html', 'hbs' ] }));
 app.use(logLoader.register());
+app.use(requestTimer.register());
+app.use(notFoundHandler.register());
 
-// x-response-time
-app.use(function *(next){
-  this.logger.info('A');
-  var start = new Date;
-  yield next;
-  this.logger.debug('E');
-  var ms = new Date - start;
-  this.set('X-Response-Time', ms + 'ms');
-});
-
-// logger
-app.use(function *(next){
-  this.logger.info('B');
-  var start = new Date;
-  yield next;
-  this.logger.debug('D');
-  var ms = new Date - start;
-  this.trace(libUtil.format('%s %s - %s', this.method, this.url, ms));
-});
-
-// response
-app.use(function *(){
-  this.logger.info('C');
-  this.body = 'Hello World';
-});
-
+// start
 app.debug();
-
-app.listen(3000);
+app.listen(conf['port']);

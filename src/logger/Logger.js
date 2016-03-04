@@ -2,54 +2,58 @@
 
 const libPath = require('path');
 const libCrypto = require('crypto');
-const conf = require(libPath.join(__dirname, '..', '..', 'config', 'logger.json'));
+const env = require(libPath.join(__dirname, '..', '..', 'config', 'env.json'))['env'];
+const conf = require(libPath.join(__dirname, '..', '..', 'config', 'logger.' + env + '.json'));
 
 class Logger {
 
-  conf;
-  level;
-
-  levels = { error: 0, warn: 1, notice: 3, info: 2, debug: 3, verbose: 4 };
-
   constructor() {
+    this.koa = null;
+    this.levels = { error: 0, warn: 1, notice: 3, info: 2, debug: 3, verbose: 4 };
     this.conf = conf;
-    this.level = this.conf['level'];
+    this.setLevel(this.conf['level'] || 'info');
   }
 
   error() {
     if (this.checkLevel('error')) {
-      this.trace(arguments);
+      this.doLog('error', arguments);
     }
   }
 
   warn() {
     if (this.checkLevel('warn')) {
-      this.trace(arguments);
+      this.doLog('warn', arguments);
     }
   }
 
   notice() {
     if (this.checkLevel('notice')) {
-      this.trace(arguments);
+      this.doLog('notice', arguments);
     }
   }
 
   info() {
     if (this.checkLevel('info')) {
-      this.trace(arguments);
+      this.doLog('info', arguments);
     }
   }
 
   debug() {
     if (this.checkLevel('debug')) {
-      this.trace(arguments);
+      this.doLog('debug', arguments);
     }
   }
 
   verbose() {
     if (this.checkLevel('verbose')) {
-      this.trace(arguments);
+      this.doLog('verbose', arguments);
     }
+  }
+
+  doLog(level, parentArgs) {
+    let args = Array.prototype.slice.call(parentArgs);
+    args.unshift(level);
+    this.koa.trace.apply(this.koa, args);
   }
 
   setLevel(level) {
@@ -70,10 +74,11 @@ class Logger {
    */
   register() {
     const self = this;
-    return function *middleware(next) {
+    return function *loggerRegister(next) {
       this.id = libCrypto.randomBytes(12);
       this.logger = self;
-      self.trace = this.trace;
+      self.koa = this;
+      yield next;
     };
   }
 
