@@ -1,6 +1,8 @@
 "use strict";
 
 const libUtil = require('util');
+const libPath = require('path');
+const libCofs = require('co-fs');
 
 class NotFoundHandler {
 
@@ -13,12 +15,10 @@ class NotFoundHandler {
 
       this.status = 404;
 
-      //console.log(this.render('404.html', { title: 'arrow' }));
-
       switch (this.accepts('html', 'json')) {
         case 'html':
           this.type = 'html';
-          this.body = yield *this.render('404.html', { title: 'arrow' });
+          this.body = yield libCofs.readFile(libPath.join(__dirname, '..', '..', 'public', 'templates', 'views', '404.html'));
           break;
         case 'json':
           this.body = {

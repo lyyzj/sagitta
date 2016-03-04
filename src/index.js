@@ -12,12 +12,13 @@ const serve = require('koa-static');
 require('koa-trace')(app);
 
 const logLoader = require(libPath.join(__dirname, 'logger', 'Logger.js'));
+const handlbarsRegister = require(libPath.join(__dirname, 'template', 'Handlebars.js'));
 const requestTimer = require(libPath.join(__dirname, 'middleware', 'RequestTimer.js'));
 const notFoundHandler = require(libPath.join(__dirname, 'middleware', 'NotFoundHandler.js'));
 
 // middleware
 app.use(serve(libPath.join(__dirname, '..', 'public')));
-app.use(handlebars({ root: libPath.join(__dirname, '..', 'public', 'templates'), defaultLayout: 'main', extension: [ 'html', 'hbs' ] }));
+app.use(handlbarsRegister.register());
 app.use(logLoader.register());
 app.use(requestTimer.register());
 app.use(notFoundHandler.register());
