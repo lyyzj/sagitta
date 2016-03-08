@@ -6,8 +6,8 @@ class UserFetch {
 
   constructor() {
     this.method = 'get';
-    this.uri = '/user/:id';
-    this.type = 'application/json; charset=utf-8';
+    this.uri    = '/user/:id';
+    this.type   = 'application/json; charset=utf-8';
   }
 
   register() {
@@ -17,7 +17,6 @@ class UserFetch {
 }
 
 function *validate(next) {
-  console.log(this.params);
   if (!validator.isNumeric(this.params.id)) {
     throw new Error('Invalid input: id shall be number!');
   }
@@ -25,7 +24,8 @@ function *validate(next) {
 }
 
 function *execute(next) {
-  this.body = {name: "john", age:32};
+  this.type = api.type;
+  this.body = { id: this.params.id, name: "name: " + this.params.id, age: this.params.id };
 }
 
 const api = new UserFetch();
