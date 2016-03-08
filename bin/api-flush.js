@@ -27,11 +27,16 @@ class Generator {
       { name: 'type', default: 'application/json; charset=utf-8' }
     ];
     this.template = handlebars.compile(templateStr);
+    this.targetApis = process.argv.slice(2); // just flush target apis
   }
 
   run() {
     debug('Start to process api skeleton generation ...');
     for (let apiSpec of spec) {
+      if (this.targetApis.length > 0 && this.targetApis.indexOf(apiSpec.name) === -1) {
+        continue; // has target apis & not included, skip it
+      }
+
       debug('Processing %s ...', apiSpec.name);
       let checkedSpec = this.check(apiSpec);
       checkedSpec['camelCaseName'] = this.camelCase(checkedSpec.name);
