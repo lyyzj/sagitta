@@ -2,7 +2,7 @@
 
 const validator = require('validator');
 
-class UserFetch {
+class UserFetchSingle {
 
   constructor() {
     this.method = 'get';
@@ -35,6 +35,6 @@ function *execute(next) {
   this.body = { id: this.params.id, name: "name: " + this.params.id, age: this.params.id };
 }
 
-const api = new UserFetch();
+const api = new UserFetchSingle();
 
 module.exports = api;

@@ -9,7 +9,7 @@ const koa = require('koa');
 const app = koa();
 
 const serve = require('koa-static');
-require('koa-trace')(app);
+const bodyParser = require('koa-bodyparser');
 
 const logLoader = require(libPath.join(__dirname, 'logger', 'Logger.js'));
 const handlbarsRegister = require(libPath.join(__dirname, 'template', 'Handlebars.js'));
@@ -18,12 +18,15 @@ const routerLoader = require(libPath.join(__dirname, 'router', 'Router.js'));
 const notFoundHandler = require(libPath.join(__dirname, 'middleware', 'NotFoundHandler.js'));
 
 // middleware
-app.use(serve(libPath.join(__dirname, '..', 'public')));
-app.use(logLoader.register());
-app.use(handlbarsRegister.register());
-app.use(requestTimer.register());
-app.use(routerLoader.router.routes());
-app.use(notFoundHandler.register());
+require('koa-trace')(app); // add this.trace
+require('koa-qs')(app, 'extended'); // add query string parser
+app.use(serve(libPath.join(__dirname, '..', 'public'))); // static files
+app.use(logLoader.register()); // log
+app.use(handlbarsRegister.register()); // handlebars template
+app.use(requestTimer.register()); // request timer
+app.use(bodyParser()); // post body parser
+app.use(routerLoader.router.routes()); // router
+app.use(notFoundHandler.register()); // 404 handler
 
 // start
 app.debug();

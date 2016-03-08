@@ -1,7 +1,7 @@
 "use strict";
 
 const ApiSpec = [
-  { name: 'user-fetch', method: 'get', uri: '/user/:id', type: null }
+  { name: 'user-fetch-single', method: 'get', uri: '/user/:id', type: null }
 ];
 
 
