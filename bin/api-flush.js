@@ -1,66 +1,65 @@
 #!/usr/bin/env node
 "use strict";
 
-const libFsp = require('fs-promise');
+const libFsp  = require('fs-promise');
 const libPath = require('path');
-const libUtil = require('util');
 
-const env = require(libPath.join(__dirname, '..', 'config', 'env.json'))['env'];
+const env     = require(libPath.join(__dirname, '..', 'config', 'env.json'))['env'];
 const appConf = require(libPath.join(__dirname, '..', 'config', 'app.' + env + '.json'));
 
 const apiPath = libPath.join(__dirname, '..', 'app', 'api', appConf['api']);
-const spec = require(libPath.join(apiPath, 'spec.js'));
+const spec    = require(libPath.join(apiPath, 'spec.js'));
 
 process.env.DEBUG = '*';
 
-const debug = require('debug')('api-flush');
-const validator = require('validator');
-const handlebars = require('handlebars');
+const debug       = require('debug')('api-flush');
+const handlebars  = require('handlebars');
+
+const Joi       = require('joi');
+const bluebird  = require('bluebird');
 
 class Generator {
 
   constructor() {
-    this.requiredKeys = [
-      'name', 'method', 'uri'
-    ];
-    this.optionalKeys = [
-      { name: 'type', default: 'application/json; charset=utf-8' }
-    ];
+    this.schema = Joi.object().keys({
+      name:   Joi.string().required().regex(/^[a-z\-]+$/),
+      method: Joi.string().required().valid(['get', 'post', 'put', 'delete', 'patch']),
+      uri:    Joi.string().required(),
+      type:   Joi.string().optional().default('application/json; charset=utf-8'),
+      schema: Joi.string().required()
+    });
+
+    this.validate = bluebird.promisify(Joi.validate);
+
     this.template = handlebars.compile(templateStr);
+
     this.targetApis = process.argv.slice(2); // just flush target apis
   }
 
   run() {
     debug('Start to process api skeleton generation ...');
-    for (let apiSpec of spec) {
+
+    for (let i = 0; i < spec.length; i++) {
+      let apiSpec = spec.shift();
+
       if (this.targetApis.length > 0 && this.targetApis.indexOf(apiSpec.name) === -1) {
         continue; // has target apis & not included, skip it
       }
 
-      debug('Processing %s ...', apiSpec.name);
-      let checkedSpec = this.check(apiSpec);
-      checkedSpec['camelCaseName'] = this.camelCase(checkedSpec.name);
-      let outputSkeleton = this.template(checkedSpec);
-      libFsp.writeFileSync(libPath.join(apiPath, checkedSpec.name + '.js'), outputSkeleton);
+      this.process(apiSpec);
     }
   }
 
-  check(spec) {
-    if (typeof spec !== 'object') {
-      throw new Error('Spec check: Invalid spec data ...');
-    }
-    for (let requiredKey of this.requiredKeys) {
-      if (!spec.hasOwnProperty(requiredKey)) {
-        throw new Error(libUtil.format('Spec check: Missing required key: %s', requiredKey));
-      }
-    }
-    for (let optionalKey of this.optionalKeys) {
-      if (!spec.hasOwnProperty(optionalKey.name) || spec[optionalKey.name] === '' || spec[optionalKey.name] === null) {
-        spec[optionalKey.name] = optionalKey.default; // set default value
-      }
-    }
-
-    return spec;
+  process(spec) {
+    Promise.resolve(debug('Processing %s ...', spec.name)).then(() => {
+      return this.validate(spec, this.schema);
+    }).then((validatedSpec) => {
+      validatedSpec['camelCaseName'] = this.camelCase(validatedSpec.name);
+      let outputSkeleton = this.template(validatedSpec);
+      return libFsp.writeFile(libPath.join(apiPath, validatedSpec.name + '.js'), outputSkeleton);
+    }).catch((err) => {
+      debug('Failed in processing %s: %j', spec.name, err);
+    });
   }
 
   camelCase(s) {
@@ -73,7 +72,8 @@ class Generator {
 
 const templateStr = `"use strict";
 
-const validator = require('validator');
+const Joi = require('joi');
+const bluebird = require('bluebird');
 
 class {{{camelCaseName}}} {
 
@@ -81,6 +81,9 @@ class {{{camelCaseName}}} {
     this.method = '{{{method}}}';
     this.uri    = '{{{uri}}}';
     this.type   = '{{{type}}}';
+    this.schema = {{{schema}}};
+    
+    this.validate = bluebird.promisify(Joi.validate);
   }
 
   register() {
@@ -90,6 +93,8 @@ class {{{camelCaseName}}} {
 }
 
 function *validate(next) {
+  let aggregatedParams = Object.assign({}, this.params, this.query, this.request.body);
+  yield api.validate(aggregatedParams, api.schema);
   yield next;
 }
 

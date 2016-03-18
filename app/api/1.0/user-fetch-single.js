@@ -1,6 +1,7 @@
 "use strict";
 
-const validator = require('validator');
+const Joi = require('joi');
+const bluebird = require('bluebird');
 
 class UserFetchSingle {
 
@@ -8,6 +9,11 @@ class UserFetchSingle {
     this.method = 'get';
     this.uri    = '/user/:id';
     this.type   = 'application/json; charset=utf-8';
+    this.schema = Joi.object().keys({
+      id: Joi.number().required()
+    });
+    
+    this.validate = bluebird.promisify(Joi.validate);
   }
 
   register() {
@@ -16,23 +22,13 @@ class UserFetchSingle {
 
 }
 
-/**
- * Data input:
- * 1. url params: "/user/:id" => this.params.id
- * 2. url query string: "/user/search?name=jonathan&age=27" => this.query.name & this.query.age
- * 3. post body: curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://localhost:3001/api/1.0/login => this.request.body.username & ...
- */
-
 function *validate(next) {
-  if (!validator.isNumeric(this.params.id)) {
-    throw new Error('Invalid input: id shall be number!');
-  }
+  let aggregatedParams = Object.assign({}, this.params, this.query, this.request.body);
+  yield api.validate(aggregatedParams, api.schema);
   yield next;
 }
 
 function *execute(next) {
-  this.type = api.type;
-  this.body = { id: this.params.id, name: "name: " + this.params.id, age: this.params.id };
 }
 
 const api = new UserFetchSingle();
