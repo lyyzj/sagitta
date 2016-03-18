@@ -39,8 +39,11 @@ class Generator {
   run() {
     debug('Start to process api skeleton generation ...');
 
-    for (let i = 0; i < spec.length; i++) {
+    while (true) {
       let apiSpec = spec.shift();
+      if (!apiSpec) {
+        break;
+      }
 
       if (this.targetApis.length > 0 && this.targetApis.indexOf(apiSpec.name) === -1) {
         continue; // has target apis & not included, skip it
