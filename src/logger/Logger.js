@@ -38,10 +38,9 @@ class Logger {
       timestamp: true,
       showLevel: true,
       filename: file,
-      maxsize: conf.maxsize || '10m',
+      maxsize: conf.maxsize || 10 * 1024 * 1024, // 10m
       maxFiles: conf.maxFiles || 1000,
       json: conf.json || true,
-      zippedArchive: conf.zippedArchive || true,
       tailable: conf.tailable || true
     });
     let consoleTransport = new WinstonTConsole({
