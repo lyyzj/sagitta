@@ -70,6 +70,6 @@ class Config {
 
 }
 
-const confLoader = new Config();
+const instance = new Config();
 
-module.exports = confLoader;
+module.exports = instance;

@@ -25,4 +25,6 @@ class Handlebars {
 
 }
 
-module.exports = new Handlebars();
+const instance = new Handlebars();
+
+module.exports = instance;

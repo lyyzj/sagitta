@@ -36,4 +36,6 @@ class NotFoundHandler {
 
 }
 
-module.exports = new NotFoundHandler();
+const instance = new NotFoundHandler();
+
+module.exports = instance;

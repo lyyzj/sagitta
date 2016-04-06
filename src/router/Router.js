@@ -29,4 +29,6 @@ class RouterLoader {
 
 }
 
-module.exports = new RouterLoader();
+const instance = new RouterLoader();
+
+module.exports = instance;

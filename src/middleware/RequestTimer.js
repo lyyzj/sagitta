@@ -8,14 +8,16 @@ class RequestTimer {
     return function *RequestTimer(next){
       var start = new Date;
       yield next;
-      var ms = new Date - start;
+      var consumed = new Date - start;
       if (process.env.hasOwnProperty('DEBUG')) {
-        this.set('X-Response-Time', ms + 'ms');
+        this.set('X-Response-Time', consumed + 'ms');
       }
-      this.logger.info(libUtil.format('%s %s - %s ms', this.method, this.url, ms));
+      this.logger.info(libUtil.format('%s %s - %s ms', this.method, this.url, consumed));
     }
   }
 
 }
 
-module.exports = new RequestTimer();
+const instance = new RequestTimer();
+
+module.exports = instance;

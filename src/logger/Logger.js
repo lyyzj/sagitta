@@ -84,6 +84,6 @@ class Logger {
 
 }
 
-const logLoader = new Logger();
+const instance = new Logger();
 
-module.exports = logLoader;
+module.exports = instance;
