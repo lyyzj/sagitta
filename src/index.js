@@ -18,7 +18,6 @@ const routerLoader = require(libPath.join(__dirname, 'router', 'Router.js'));
 const notFoundHandler = require(libPath.join(__dirname, 'middleware', 'NotFoundHandler.js'));
 
 // middleware
-require('koa-trace')(app); // add this.trace
 require('koa-qs')(app, 'extended'); // add query string parser
 app.use(serve(libPath.join(__dirname, '..', 'public'))); // static files
 app.use(logLoader.register()); // log
@@ -28,6 +27,11 @@ app.use(bodyParser()); // post body parser
 app.use(routerLoader.router.routes()); // router
 app.use(notFoundHandler.register()); // 404 handler
 
+// other components
+logLoader.initialize({
+  level: 'verbose',
+  filename: libPath.join(__dirname, '..', 'log', 'arrow-web.log')
+});
+
 // start
-app.debug();
 app.listen(conf['port']);

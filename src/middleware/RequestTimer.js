@@ -1,6 +1,6 @@
 "use strict";
 
-const libUtil = require('util');
+const logger = require('../logger/Logger.js');
 
 class RequestTimer {
 
@@ -12,7 +12,7 @@ class RequestTimer {
       if (process.env.hasOwnProperty('DEBUG')) {
         this.set('X-Response-Time', consumed + 'ms');
       }
-      this.logger.info(libUtil.format('%s %s - %s ms', this.method, this.url, consumed));
+      logger.info(this.reqId, '%s %s - %s ms', this.method, this.url, consumed);
     }
   }
 
