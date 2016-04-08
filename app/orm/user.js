@@ -7,9 +7,16 @@ class UserModel extends OrmModel {
 
   constructor() {
     this.name = 'user';
-    this.handle = OrmHandler.getWaterlineModel(this.name);
+    this.instance = OrmHandler.getWaterlineModel(this.name);
 
-    this.schema = {};
+    this.schema = {
+      identity: 'user',
+      connection: 'default',
+      attributes: {
+        firstName: 'string',
+        lastName: 'string'
+      }
+    };
   }
 
 }

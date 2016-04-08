@@ -4,8 +4,16 @@ const cache = require('../cache/Cache.js');
 
 class OrmModel {
 
-  getShardIdVal(data) {
+  constructor() {
+    this.schema = {};
+  }
 
+  register() {
+    return this.schema;
+  }
+  
+  find() {
+    
   }
 
 }

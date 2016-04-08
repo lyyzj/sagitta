@@ -3,6 +3,8 @@
 const Joi = require('joi');
 const bluebird = require('bluebird');
 
+const logger = require('../../../src/logger/Logger.js');
+
 class UserFetchSingle {
 
   constructor() {
@@ -29,6 +31,13 @@ function *validate(next) {
 }
 
 function *execute(next) {
+  this.body = this.params.id;
+  logger.verbose(this.reqId, 'verbose');
+  logger.debug(this.reqId, 'debug');
+  logger.info(this.reqId, 'info');
+  logger.notice(this.reqId, 'notice');
+  logger.warn(this.reqId, 'warn');
+  logger.error(this.reqId, 'error');
 }
 
 const api = new UserFetchSingle();
