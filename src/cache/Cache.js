@@ -17,30 +17,44 @@ class Cache {
     this.instance = new Redis(conf);
   }
 
-  setModelHash(modelName, shardId, queryString, data, expires) {
-    let key = this.genModelKey(modelName, shardId);
-    return this.instance.pipeline()
-      .hset(key, queryString, msgpack.encode(data))
-      .expire(key, this.genExpire(expires))
-      .exec();
+  setModelHash(modelName, identify, queryString, data, expires) {
+    let key = this.genModelKey(modelName, identify);
+    return new Promise((resolve, reject) => {
+      this.instance.pipeline()
+        .hset(key, queryString, msgpack.encode(data))
+        .expire(key, this.genExpire(expires))
+        .exec()
+        .then((results) => { // results: [[null, 1], [null, 1]]
+          results.forEach((result) => { // result: [null, 1]
+            if (result[0]) {
+              reject(result[0]); // err
+            }
+          });
+          resolve(data); // data itself resolved
+        });
+    });
   }
 
-  getModelHash(modelName, shardId, queryString) {
+  getModelHash(modelName, identify, queryString) {
     return new Promise((resolve, reject) => {
-      this.instance.hgetBuffer(this.genModelKey(modelName, shardId), queryString).then((data) => {
+      this.instance.hgetBuffer(this.genModelKey(modelName, identify), queryString).then((data) => {
         resolve(msgpack.decode(data));
       }).catch((err) => {
         reject(err);
       });
     });
   }
+  
+  removeModelHash(modelName, identify) {
+    return this.instance.del(this.genModelKey(modelName, identify));
+  }
 
   setExpire(key, expires) {
     return this.instance.expire(key, this.genExpire(expires));
   }
 
-  genModelKey(modelName, shardId) {
-    return `${modelName}:${shardId}`;
+  genModelKey(modelName, identify) {
+    return `${modelName}:${identify}`;
   }
 
   genExpire(expires) {
