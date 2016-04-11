@@ -54,8 +54,8 @@ class App {
       router:   this.router.schema,
       template: this.template.schema,
       app:      joi.object().keys({
-        host:       joi.string().ip().optional().default('127.0.0.1'),
-        port:       joi.number().integer().min(1).max(65535).optional().default(3085),
+        host:       joi.string().ip().optional(),
+        port:       joi.number().integer().min(1).max(65535).optional().default(3000),
         staticPath: joi.string().required()
       }).required()
     });
@@ -113,10 +113,13 @@ class App {
       return;
     }
 
-    let conn = `${this.conf.app.host}:${this.conf.app.port}`;
-
-    this.app.listen(conn);
-    debug(`[Sagitta] App listening on: ${conn}`);
+    if (this.conf.app.hasOwnProperty('host')) {
+      this.app.listen(this.conf.app.port, this.conf.app.host);
+      debug(`[Sagitta] App listening on: ${this.conf.app.host}:${this.conf.app.port}`);
+    } else {
+      this.app.listen(this.conf.app.port);
+      debug(`[Sagitta] App listening on: ${this.conf.app.port}`);
+    }
   }
 
 }
