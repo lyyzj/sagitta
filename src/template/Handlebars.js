@@ -1,30 +1,33 @@
 "use strict";
 
-const libPath = require('path');
+const libPath     = require('path');
 
-const handlebars = require('handlebars');
-const templatePath = libPath.join(__dirname, '..', '..', 'public', 'templates');
+const handlebars  = require('handlebars');
+
+const joi         = require('joi');
+const joiValidate = require('../utility/JoiValidate');
 
 class Handlebars {
 
+  cache   = {};
+  schema  = {};
+
   constructor() {
     this.cache = {};
+
+    this.schema = joi.object().keys({});
+  }
+
+  initialize(conf) {
+    return Promise.resolve();
   }
 
   render(fileName, args) {
 
   }
 
-  register() {
-    return function *handlbarsRegister(next) {
-      const self = this;
-      this.render = self.render;
-      yield next;
-    };
-  }
-
 }
 
-const instance = new Handlebars();
+const hbs = new Handlebars();
 
-module.exports = instance;
+module.exports = hbs;
