@@ -107,16 +107,6 @@ class Logger {
     this.instance[level].apply(this.instance, args);
   }
 
-  /**
-   * Provide a koa middleware register function
-   */
-  register() {
-    return function *requestIdRegister(next) {
-      this.reqId = libCrypto.randomBytes(12);
-      yield next;
-    };
-  }
-
 }
 
 const logger = new Logger();
