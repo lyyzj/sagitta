@@ -1,13 +1,23 @@
 "use strict";
 
 const libPath = require('path');
-const libCrypto = require('crypto');
+const libFsp  = require('fs-promise');
 
-const WinstonTFile = require('winston').transports.File;
+const WinstonTFile    = require('winston').transports.File;
 const WinstonTConsole = require('winston').transports.Console;
-const WinstonLogger = require('winston').Logger;
+const WinstonLogger   = require('winston').Logger;
+
+const joi         = require('joi');
+const joiValidate = require('../utility/JoiValidate');
 
 class Logger {
+
+  conf        = {};
+  instance    = null;
+  initialized = false;
+  levels      = {};
+  colors      = {};
+  schema      = {};
 
   constructor() {
     this.conf = null;
@@ -16,51 +26,55 @@ class Logger {
 
     this.levels = { error: 0, warn: 1, notice: 2, info: 3, debug: 4, verbose: 5 };
     this.colors = { error: 'red', warn: 'yellow', notice: 'cyan', info: 'green', debug: 'blue', verbose: 'grey' };
+
+    this.schema = joi.object().keys({
+      level:      joi.string().required().allow(Object.keys(this.levels)),
+      path:       joi.string().required(),
+      timestamp:  joi.boolean().optional().default(true),
+      showLevel:  joi.boolean().optional().default(true),
+      maxsize:    joi.number().integer().optional().default(10 * 1024 * 1024), // 10m
+      maxFiles:   joi.number().integer().optional().default(1000),
+      json:       joi.boolean().optional().default(true),
+      tailable:   joi.boolean().optional().default(true)
+    });
   }
 
   initialize(conf) {
-    this.conf = conf;
+    return new Promise((resolve, reject) => {
+      joiValidate(conf, this.schema).then((_) => {
+        this.conf = _;
 
-    // check level
-    let level = 'info';
-    if (conf.hasOwnProperty('level') && this.levels.hasOwnProperty(conf.level)) {
-      level = conf.level;
-    }
+        // create transports
+        let fileTransport = new WinstonTFile({
+          colorize:   true,
+          timestamp:  this.conf.timestamp,
+          showLevel:  this.conf.showLevel,
+          filename:   this.conf.path,
+          maxsize:    this.conf.maxsize,
+          maxFiles:   this.conf.maxFiles,
+          json:       this.conf.json,
+          tailable:   this.conf.tailable
+        });
+        let consoleTransport = new WinstonTConsole({
+          colorize: true,
+          timestamp: this.conf.timestamp,
+          showLevel: this.conf.showLevel
+        });
 
-    // check file info
-    let file = libPath.join('tmp', 'arrow.log');
-    if (conf.hasOwnProperty('filename')) {
-      file = libPath.isAbsolute(conf.filename) ? conf.filename : libPath.join('tmp', libPath.normalize(conf.filename))
-    }
+        this.instance = new WinstonLogger({
+          level: this.conf.level,
+          transports: [
+            fileTransport,
+            consoleTransport
+          ],
+          levels: this.levels,
+          colors: this.colors
+        });
 
-    // create transports
-    let fileTransport = new WinstonTFile({
-      colorize: false,
-      timestamp: true,
-      showLevel: true,
-      filename: file,
-      maxsize: conf.maxsize || 10 * 1024 * 1024, // 10m
-      maxFiles: conf.maxFiles || 1000,
-      json: conf.json || true,
-      tailable: conf.tailable || true
+        this.initialized = true;
+        resolve();
+      }).catch(err => reject(err));
     });
-    let consoleTransport = new WinstonTConsole({
-      colorize: true,
-      timestamp: true,
-      showLevel: true
-    });
-
-    this.instance = new WinstonLogger({
-      level: level,
-      transports: [
-        fileTransport,
-        consoleTransport
-      ],
-      levels: this.levels,
-      colors: this.colors
-    });
-
-    this.initialized = true;
   }
 
   error() {

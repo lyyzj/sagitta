@@ -1,38 +1,58 @@
 "use strict";
 
 const libPath = require('path');
-const libFsp = require('fs-promise');
+const libFsp  = require('fs-promise');
 
 const Router = require('koa-router');
 
-const env = require(libPath.join(__dirname, '..', '..', 'config', 'env.json'))['env'];
-const appConf = require(libPath.join(__dirname, '..', '..', 'config', 'app.' + env + '.json'));
+const joi         = require('joi');
+const joiValidate = require('../utility/JoiValidate');
 
 class RouterLoader {
 
+  instance  = null;
+  schema    = {};
+
   constructor() {
-    this.router = new Router({
-      prefix: '/api/' + appConf['api']
+    this.instance = null;
+
+    this.schema = joi.object().keys({
+      path:   joi.string().required(),
+      apiVer: joi.string().required()
     });
-
-    this.apiPath = libPath.join(__dirname, '..', '..', 'app', 'api', appConf['api']);
-
-    let files = libFsp.readdirSync(this.apiPath);
-    for (let file of files) {
-      if (file === 'spec.js') {
-        continue; // spec definition, skip it
-      }
-      let api = require(libPath.join(this.apiPath, file));
-      this.router[api.method].apply(this.router, api.register());
-    }
   }
 
   initialize(conf) {
-
+    let validated = {};
+    return new Promise((resolve, reject) => {
+      joiValidate(conf, this.schema).then((_) => {
+        validated = _;
+        return libFsp.stat(validated.path);
+      }).then((stats) => {
+        if (!stats.isDirectory()) {
+          throw new Error('[RouterLoader] conf.path have to be a valid path!');
+        } else if (!stats.isAbsolute()) {
+          throw new Error('[RouterLoader] conf.path have to be an absolute path!');
+        }
+        return libFsp.readdir(validated.path);
+      }).then((files) => {
+        this.instance = new Router({
+          prefix: '/api/' + validated.apiVer
+        });
+        for (let file of files) {
+          if (file === 'spec.js') {
+            continue; // spec definition, skip it
+          }
+          let api = require(libPath.join(validated.path, file));
+          this.instance[api.method].apply(this.instance, api.register());
+        }
+        resolve();
+      }).catch(err => reject(err));
+    });
   }
 
 }
 
-const instance = new RouterLoader();
+const router = new RouterLoader();
 
-module.exports = instance;
+module.exports = router;

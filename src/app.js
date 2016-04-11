@@ -2,9 +2,9 @@
 
 const libFsp = require('fs-promise');
 
-const joi       = require('joi');
-const bluebird  = require('bluebird');
-const debug     = require('debug')('sagitta');
+const joi         = require('joi');
+const joiValidate = require('./utility/JoiValidate');
+const debug       = require('debug')('sagitta');
 
 const cacheInstance     = require('./cache/Cache');
 const configInstance    = require('./config/Config');
@@ -24,6 +24,16 @@ const koaMidRequestIdHandler  = require('./middleware/RequestIdHandler');
 const koaMidRequestTimer      = require('./middleware/RequestTimer');
 
 class App {
+
+  cache       = null;
+  config      = null;
+  logger      = null;
+  orm         = null;
+  router      = null;
+  template    = null;
+  app         = null;
+  conf        = {};
+  initialized = false;
 
   constructor() {
     this.cache    = cacheInstance;
@@ -58,11 +68,10 @@ class App {
         staticPath: joi.string().required()
       }).required()
     });
-    let validate = bluebird.promisify(joi.validate);
 
     // initialization
     return new Promise((resolve, reject) => {
-      validate(conf, confSchema).then((_) => {
+      joiValidate(conf, confSchema).then((_) => {
         let initQueue = [
           this.cache.initialize(conf.cache),
           this.config.initialize(conf.config),
@@ -89,9 +98,9 @@ class App {
     return new Promise((resolve, reject) => {
       libFsp.stat(this.conf.app.staticPath).then((stats) => {
         if (!stats.isDirectory()) {
-          throw new Error('conf.app.staticPath have to be a valid path!');
+          throw new Error('[App] conf.app.staticPath have to be a valid path!');
         } else if (!stats.isAbsolute()) {
-          throw new Error('conf.app.staticPath have to be an absolute path!');
+          throw new Error('[App] conf.app.staticPath have to be an absolute path!');
         }
 
         koaQueryString(this.app, 'extended');             // add query string parser

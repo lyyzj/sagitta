@@ -2,23 +2,43 @@
 
 const Redis = require('ioredis');
 
-const msgpack = require('msgpack-lite');
+const joi         = require('joi');
+const joiValidate = require('../utility/JoiValidate');
+const msgpack     = require('msgpack-lite');
 
 class Cache {
 
+  instance  = null;
+  schema    = {};
+  variance  = 0;
+  expires   = 0;
+
   constructor() {
     this.instance = null;
+
+    this.schema = joi.object().keys({
+      host:     joi.string().ip().optional().default('127.0.0.1'),
+      port:     joi.number().integer().optional().default(6379),
+      family:   joi.number().integer().optional().allow([4, 6]).default(4),
+      password: joi.string().optional(),
+      db:       joi.number().integer().optional().default(0)
+    }).required();
 
     this.variance = 10;
     this.expires = 18000; // 5 hours = 5 * 60 * 60 seconds
   }
 
   initialize(conf) {
-    this.instance = new Redis(conf);
+    return new Promise((resolve, reject) => {
+      joiValidate(conf, this.schema).then((validated) => {
+        this.instance = new Redis(validated);
+        resolve();
+      }).catch(err => reject(err));
+    });
   }
 
   setModelHash(modelName, identify, queryString, data, expires) {
-    let key = this.genModelKey(modelName, identify);
+    let key = Cache.genModelKey(modelName, identify);
     return new Promise((resolve, reject) => {
       this.instance.pipeline()
         .hset(key, queryString, msgpack.encode(data))
@@ -37,23 +57,23 @@ class Cache {
 
   getModelHash(modelName, identify, queryString) {
     return new Promise((resolve, reject) => {
-      this.instance.hgetBuffer(this.genModelKey(modelName, identify), queryString).then((data) => {
+      this.instance.hgetBuffer(Cache.genModelKey(modelName, identify), queryString).then((data) => {
         resolve(msgpack.decode(data));
       }).catch((err) => {
         reject(err);
       });
     });
   }
-  
+
   removeModelHash(modelName, identify) {
-    return this.instance.del(this.genModelKey(modelName, identify));
+    return this.instance.del(Cache.genModelKey(modelName, identify));
   }
 
   setExpire(key, expires) {
     return this.instance.expire(key, this.genExpire(expires));
   }
 
-  genModelKey(modelName, identify) {
+  static genModelKey(modelName, identify) {
     return `${modelName}:${identify}`;
   }
 
@@ -64,10 +84,10 @@ class Cache {
     let varianceMax = expires * 0.02 * this.variance;
     let varianceMinus = expires * 0.01 * this.variance;
 
-    return Math.floor(expires + this.getRandomArbitrary(varianceMin, varianceMax) - varianceMinus);
+    return Math.floor(expires + Cache.getRandomArbitrary(varianceMin, varianceMax) - varianceMinus);
   }
 
-  getRandomArbitrary(min, max) {
+  static getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
   }
 

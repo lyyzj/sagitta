@@ -1,60 +1,74 @@
 "use strict";
 
+const joi         = require('joi');
+const joiValidate = require('../utility/JoiValidate');
+
 const libPath = require('path');
-const libFsp = require('fs-promise');
+const libFsp  = require('fs-promise');
 const libUtil = require('util');
-const configRoot = libPath.join(__dirname, '..', '..', 'config');
-const env = require(libPath.join(configRoot, 'env.json'));
 
 class Config {
 
-  suffix = '.json';
-  cache = {};
+  path    = '';
+  suffix  = '';
+  schema  = {};
+  cache   = {};
 
   constructor() {
-    if (env && typeof env === 'object' && env.hasOwnProperty('env')) {
-      this.suffix = '.' + env.env + this.suffix;
-    }
+    this.schema = joi.object().keys({
+      path:   joi.string().required(),
+      suffix: joi.string().optional().default('.json')
+    }).required();
+
+    this.cache = {};
   }
 
   initialize(conf) {
-
+    let validated = {};
+    return new Promise((resolve, reject) => {
+      joiValidate(conf, this.schema).then((_) => {
+        validated = _;
+        return libFsp.stat(validated.path);
+      }).then((stats) => {
+        if (!stats.isDirectory()) {
+          throw new Error('[Config] conf.path have to be a valid path!');
+        } else if (!libPath.isAbsolute(validated.path)) {
+          throw new Error('[Config] conf.path have to be an absolute path!');
+        }
+        this.path   = validated.path;
+        this.suffix = validated.suffix;
+        resolve();
+      }).catch(err => reject(err));
+    });
   }
 
-  /**
-   * Load config of one key from config file
-   * @param fileName file name could be specified with sub dir: 'game/data'
-   * @param key
-   * @returns {String|null|Object}
-   */
-  loadKey(fileName, key) {
-    this.loadJson(fileName).then((conf) => {
+  loadKey(fileName, key, path) {
+    let path = path || this.path; // optional
+
+    this.loadJson(fileName, path).then((conf) => {
       if (conf.hasOwnProperty(key)) {
         return Promise.resolve(conf[key]);
       } else {
-        return Promise.reject(new Error(libUtil.format('Config: Key not found: %s - %s', fileName, key)));
+        return Promise.reject(new Error(libUtil.format('[Config] Key not found: %s - %s', fileName, key)));
       }
     }).catch((err) => {
       return Promise.reject(err);
     })
   }
 
-  /**
-   * Load whole config file into json
-   * @param fileName file name could be specified with sub dir: 'game/data'
-   * @returns {Promise<Object>}
-   */
-  loadJson(fileName) {
+  loadJson(fileName, path) {
+    let path = path || this.path; // optional
+
     // exists in cache
     if (this.cache.hasOwnProperty(fileName)) {
       return Promise.resolve(this.cache[fileName]);
     }
 
     // check file exists
-    let filePath = libPath.join(configRoot, fileName);
+    let filePath = libPath.join(path, fileName);
     libFsp.stat(filePath).then((stats) => {
       if (!stats.isFile()) {
-        return Promise.reject(new Error(libUtil.format('Config: File not found: %s', fileName)));
+        return Promise.reject(new Error(libUtil.format('[Config] File not found: %s', filePath)));
       }
     });
 
@@ -74,6 +88,6 @@ class Config {
 
 }
 
-const instance = new Config();
+const config = new Config();
 
-module.exports = instance;
+module.exports = config;

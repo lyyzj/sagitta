@@ -1,16 +1,20 @@
 "use strict";
 
-const cache = require('../cache/Cache.js');
-
-const logger = require('../logger/Logger.js');
+const cache   = require('../cache/Cache.js');
+const logger  = require('../logger/Logger.js');
 
 class OrmModel {
 
+  name        = '';   // model name
+  instance    = null; // waterline model instance
+  identifyKey = '';   // model identify attribute name
+  schema      = {};   // waterline model definition schema object
+
   constructor() {
-    this.name = '';
-    this.instance = null;
-    this.identifyKey = '';
-    this.schema = {};
+    this.name         = '';
+    this.instance     = null;
+    this.identifyKey  = '';
+    this.schema       = {};
   }
 
   register() {
