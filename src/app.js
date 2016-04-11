@@ -106,7 +106,6 @@ class App {
         koaQueryString(this.app, 'extended');             // add query string parser
         this.app.use(koaServe(this.conf.staticPath));     // static files serving
         this.app.use(koaMidRequestIdHandler.register());  // add request id in app
-        this.app.use(this.template.register());           // handlebars template
         this.app.use(koaMidRequestTimer.register());      // request timer
         this.app.use(koaBodyParser());                    // post body parser
         this.app.use(this.router.instance.routes());      // router
