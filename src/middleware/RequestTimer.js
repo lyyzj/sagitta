@@ -18,6 +18,6 @@ class RequestTimer {
 
 }
 
-const instance = new RequestTimer();
+const timer = new RequestTimer();
 
-module.exports = instance;
+module.exports = timer;
