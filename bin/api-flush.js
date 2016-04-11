@@ -57,16 +57,16 @@ class ApiGenerator {
         continue; // has target apis & not included, skip it
       }
 
-      this.process(apiSpec);
+      this.process(path, apiSpec);
     }
   }
 
-  process(spec) {
+  process(path, spec) {
     Promise.resolve(debug('[ApiGenerator] Processing %s ...', spec.name)).then(() => {
       return joiValidate(spec, this.schema);
     }).then((validatedSpec) => {
       validatedSpec['camelCaseName'] = ApiGenerator.camelCase(validatedSpec.name);
-      return libFsp.writeFile(libPath.join(apiPath, validatedSpec.name + '.js'), this.template(validatedSpec));
+      return libFsp.writeFile(libPath.join(path, validatedSpec.name + '.js'), this.template(validatedSpec));
     }).catch((err) => {
       debug('[ApiGenerator] Failed in processing %s: %j', spec.name, err);
     });
@@ -115,4 +115,4 @@ module.exports = api;`;
 
 const generator = new ApiGenerator();
 
-module.exports = generator.run;
+module.exports = generator;
