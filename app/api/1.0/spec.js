@@ -1,14 +1,14 @@
 "use strict";
 
-const Joi = require('joi');
+const joi = require('joi');
 
 const ApiSpec = [
   {
     name:   'user-fetch-single',
     method: 'get',
     uri:    '/user/:id',
-    schema: `Joi.object().keys({
-      id: Joi.number().required()
+    schema: `joi.object().keys({
+      id: joi.number().integer().required()
     })`
   }
 ];

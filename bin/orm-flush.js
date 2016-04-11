@@ -1,3 +1,9 @@
-#!/usr/bin/env node
 "use strict";
 
+class OrmGenerator {
+
+}
+
+const generator = new OrmGenerator();
+
+module.exports = generator.run;

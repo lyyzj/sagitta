@@ -21,7 +21,7 @@ class Logger {
     this.colors = { error: 'red', warn: 'yellow', notice: 'cyan', info: 'green', debug: 'blue', verbose: 'grey' };
 
     this.schema = joi.object().keys({
-      level:      joi.string().required().allow(Object.keys(this.levels)),
+      level:      joi.string().required().valid(Object.keys(this.levels)),
       path:       joi.string().required(),
       timestamp:  joi.boolean().optional().default(true),
       showLevel:  joi.boolean().optional().default(true),
