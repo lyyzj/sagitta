@@ -1,6 +1,7 @@
 "use strict";
 
-const libFsp = require('fs-promise');
+const libFsp  = require('fs-promise');
+const libPath = require('path');
 
 const joi         = require('joi');
 const joiValidate = require('./utility/JoiValidate');
@@ -24,16 +25,6 @@ const koaMidRequestIdHandler  = require('./middleware/RequestIdHandler');
 const koaMidRequestTimer      = require('./middleware/RequestTimer');
 
 class App {
-
-  cache       = null;
-  config      = null;
-  logger      = null;
-  orm         = null;
-  router      = null;
-  template    = null;
-  app         = null;
-  conf        = {};
-  initialized = false;
 
   constructor() {
     this.cache    = cacheInstance;
@@ -99,12 +90,12 @@ class App {
       libFsp.stat(this.conf.app.staticPath).then((stats) => {
         if (!stats.isDirectory()) {
           throw new Error('[App] conf.app.staticPath have to be a valid path!');
-        } else if (!stats.isAbsolute()) {
+        } else if (!libPath.isAbsolute(this.conf.app.staticPath)) {
           throw new Error('[App] conf.app.staticPath have to be an absolute path!');
         }
 
         koaQueryString(this.app, 'extended');             // add query string parser
-        this.app.use(koaServe(this.conf.staticPath));     // static files serving
+        this.app.use(koaServe(this.conf.app.staticPath));     // static files serving
         this.app.use(koaMidRequestIdHandler.register());  // add request id in app
         this.app.use(koaMidRequestTimer.register());      // request timer
         this.app.use(koaBodyParser());                    // post body parser

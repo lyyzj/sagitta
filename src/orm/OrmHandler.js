@@ -7,13 +7,8 @@ const Waterline = require('waterline');
 
 const joi         = require('joi');
 const joiValidate = require('../utility/JoiValidate');
-const bluebird    = require('bluebird');
 
 class OrmHandler {
-
-  waterline   = null;
-  collections = {};
-  schema      = {};
 
   constructor() {
     this.waterline = new Waterline();
@@ -47,11 +42,14 @@ class OrmHandler {
           let model = require(libPath.join(validated.path, file));
           this.waterline.loadCollection(Waterline.Collection.extend(model.register()));
         }
-        let init = bluebird.promisify(this.waterline.initialize);
-        return init(validated);
-      }).then((instance) => {
-        this.collections = instance.collections;
-        resolve();
+        this.waterline.initialize(validated, (err, instance) => {
+          if (err) {
+            reject(err);
+          } else {
+            this.collections = instance.collections;
+            resolve();
+          }
+        });
       }).catch(err => reject(err));
     });
   }

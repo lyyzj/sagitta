@@ -8,11 +8,6 @@ const msgpack     = require('msgpack-lite');
 
 class Cache {
 
-  instance  = null;
-  schema    = {};
-  variance  = 0;
-  expires   = 0;
-
   constructor() {
     this.instance = null;
 
@@ -22,7 +17,7 @@ class Cache {
       family:   joi.number().integer().optional().allow([4, 6]).default(4),
       password: joi.string().optional(),
       db:       joi.number().integer().optional().default(0)
-    }).required();
+    }).optional();
 
     this.variance = 10;
     this.expires = 18000; // 5 hours = 5 * 60 * 60 seconds

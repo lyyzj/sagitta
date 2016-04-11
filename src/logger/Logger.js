@@ -12,13 +12,6 @@ const joiValidate = require('../utility/JoiValidate');
 
 class Logger {
 
-  conf        = {};
-  instance    = null;
-  initialized = false;
-  levels      = {};
-  colors      = {};
-  schema      = {};
-
   constructor() {
     this.conf = null;
     this.instance = null;

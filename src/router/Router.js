@@ -10,9 +10,6 @@ const joiValidate = require('../utility/JoiValidate');
 
 class RouterLoader {
 
-  instance  = null;
-  schema    = {};
-
   constructor() {
     this.instance = null;
 
@@ -31,7 +28,7 @@ class RouterLoader {
       }).then((stats) => {
         if (!stats.isDirectory()) {
           throw new Error('[RouterLoader] conf.path have to be a valid path!');
-        } else if (!stats.isAbsolute()) {
+        } else if (!libPath.isAbsolute(validated.path)) {
           throw new Error('[RouterLoader] conf.path have to be an absolute path!');
         }
         return libFsp.readdir(validated.path);

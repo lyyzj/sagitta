@@ -9,11 +9,6 @@ const libUtil = require('util');
 
 class Config {
 
-  path    = '';
-  suffix  = '';
-  schema  = {};
-  cache   = {};
-
   constructor() {
     this.schema = joi.object().keys({
       path:   joi.string().required(),
@@ -43,9 +38,9 @@ class Config {
   }
 
   loadKey(fileName, key, path) {
-    let path = path || this.path; // optional
+    let pathValidated = path || this.path; // optional
 
-    this.loadJson(fileName, path).then((conf) => {
+    this.loadJson(fileName, pathValidated).then((conf) => {
       if (conf.hasOwnProperty(key)) {
         return Promise.resolve(conf[key]);
       } else {
@@ -57,7 +52,7 @@ class Config {
   }
 
   loadJson(fileName, path) {
-    let path = path || this.path; // optional
+    let pathValidated = path || this.path; // optional
 
     // exists in cache
     if (this.cache.hasOwnProperty(fileName)) {
@@ -65,7 +60,7 @@ class Config {
     }
 
     // check file exists
-    let filePath = libPath.join(path, fileName);
+    let filePath = libPath.join(pathValidated, fileName);
     libFsp.stat(filePath).then((stats) => {
       if (!stats.isFile()) {
         return Promise.reject(new Error(libUtil.format('[Config] File not found: %s', filePath)));
