@@ -17,6 +17,10 @@ class Config {
     }
   }
 
+  initialize(conf) {
+
+  }
+
   /**
    * Load config of one key from config file
    * @param fileName file name could be specified with sub dir: 'game/data'

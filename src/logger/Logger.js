@@ -11,7 +11,8 @@ class Logger {
 
   constructor() {
     this.conf = null;
-    this.logger = null;
+    this.instance = null;
+    this.initialized = false;
 
     this.levels = { error: 0, warn: 1, notice: 2, info: 3, debug: 4, verbose: 5 };
     this.colors = { error: 'red', warn: 'yellow', notice: 'cyan', info: 'green', debug: 'blue', verbose: 'grey' };
@@ -49,7 +50,7 @@ class Logger {
       showLevel: true
     });
 
-    this.logger = new WinstonLogger({
+    this.instance = new WinstonLogger({
       level: level,
       transports: [
         fileTransport,
@@ -58,6 +59,8 @@ class Logger {
       levels: this.levels,
       colors: this.colors
     });
+
+    this.initialized = true;
   }
 
   error() {
@@ -92,19 +95,23 @@ class Logger {
    * e.g logger.verbose(this.reqId, 'verbose');
    */
   doLog(level, parentArgs) {
+    if (!this.initialized) {
+      return; // no instance to log
+    }
+
     let args = Array.prototype.slice.call(parentArgs);
     if (Buffer.isBuffer(args[0])) { // the first argument is "reqId"
       let reqId = args.shift().toString('base64');
       args[0] = reqId + ': ' + args[0];
     }
-    this.logger[level].apply(this.logger, args);
+    this.instance[level].apply(this.instance, args);
   }
 
   /**
    * Provide a koa middleware register function
    */
   register() {
-    return function *cryptoIdRegister(next) {
+    return function *requestIdRegister(next) {
       this.reqId = libCrypto.randomBytes(12);
       yield next;
     };
@@ -112,6 +119,6 @@ class Logger {
 
 }
 
-const instance = new Logger();
+const logger = new Logger();
 
-module.exports = instance;
+module.exports = logger;

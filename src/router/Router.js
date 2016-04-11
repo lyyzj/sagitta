@@ -27,6 +27,10 @@ class RouterLoader {
     }
   }
 
+  initialize(conf) {
+
+  }
+
 }
 
 const instance = new RouterLoader();
