@@ -13,8 +13,9 @@ module.exports = {
     template: app.template
   },
   Bin: {
-    apiGenerator: require('./bin/api-flush'),
-    ormGenerator: require('./bin/orm-flush')
+    apiGenerator:     require('./bin/api-flush'),
+    clientGenerator:  require('./bin/client-flush'),
+    ormGenerator:     require('./bin/orm-flush')
   },
   Orm: {
     OrmModel: require('./src/orm/OrmModel')
