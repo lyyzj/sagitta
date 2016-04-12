@@ -20,7 +20,8 @@ module.exports = {
     OrmModel: require('./src/orm/OrmModel')
   },
   Utility: {
-    joiValidate:  require('./src/utility/JoiValidate'),
-    promiseRetry: require('./src/utility/PromiseRetry')
+    joiValidate:      require('./src/utility/JoiValidate'),
+    promisedRequest:  require('./src/utility/PromisedRequest'),
+    promiseRetry:     require('./src/utility/PromiseRetry')
   }
 };

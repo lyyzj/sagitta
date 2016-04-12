@@ -50,7 +50,7 @@ class ClientApiGenerator {
         results.forEach((result) => {
           this.output += result;
         });
-        libFsp.writeFile(libPath.join(outputPath, 'sagitta-client.js'), this.output);
+        libFsp.writeFile(libPath.join(outputPath, 'sagitta-client.js'), this.output + TemplateTail);
       }).then(() => {
         debug('[ClientApiGenerator] All done ...');
       }).catch((err) => {
@@ -96,15 +96,15 @@ class ClientApiGenerator {
       });
 
       // generate function params string
-      let funcParamsStr = '';
-      if (requiredParams.length > 0) {
-        funcParamsStr = requiredParams.join(', ');
-      }
-      if (funcParamsStr !== '' && optionalParams.length > 0) {
-        funcParamsStr += ', ' + optionalParams.join(', ');
-      } else if (optionalParams.length > 0) {
-        funcParamsStr = optionalParams.join(', ');
-      }
+      let funcParamsStr = requiredParams.concat(optionalParams).join(', ');
+
+      // generate aggregation params array string
+      let aggParamsStr = '';
+      let aggParamNames = [];
+      requiredParams.concat(optionalParams).forEach((key) => {
+        aggParamNames.push(`'${key}'`);
+      });
+      aggParamsStr = aggParamNames.join(', ');
 
       let template = '';
       switch (spec.method) {
@@ -129,7 +129,9 @@ class ClientApiGenerator {
         funcName: funcName,
         requiredParams: requiredParams,
         optionalParams: optionalParams,
-        funcParamsStr: funcParamsStr
+        aggParamsStr: aggParamsStr,
+        funcParamsStr: funcParamsStr,
+        baseUrl: `${this.options.protocol}://${this.options.host}/api/${this.options.apiVer}`
       }, spec, this.options)));
     });
   }
@@ -146,45 +148,36 @@ class ClientApiGenerator {
 
 }
 
-const bluebird = require('bluebird');
-const request = bluebird.promisifyAll(require('request'));
-
-function userFetchSingle() {
-  return request.get({
-    // url:
-  });
-}
-
 const TemplateJoiSchema = `"use strict";
 const joi = require('joi');
 module.exports = {{{schema}}};
 `;
-
 const TemplateHead = `"use strict";
 
 const request = require('sagitta').Utility.promisedRequest;
 const SagittaClient = function() {};
 
 `;
-
-const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParams}}}) {
+const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
   var uri = '{{{uri}}}';
-  var aggParams = [{{{funcParams}}}];
+  var aggParams = [{{{aggParamsStr}}}];
   aggParams.forEach(function(key, index) {
-    var value = aggParams[index];
+    var value = arguments[index];
     uri = uri.replace(':' + key, value);
   });
-  var url = '{{{protocol}}}://{{{host}}}/api/{{{apiVer}}}{{{uri}}}';
+  var url = '{{{baseUrl}}}' + uri;
   return request.getAsync({
     url: url,
     timeout: {{{timeout}}}
   });
 };
+
 `;
 const TemplatePost = ``;
 const TemplatePut = ``;
 const TemplateDelete = ``;
 const TemplatePatch = ``;
+const TemplateTail = `module.exports = new SagittaClient();`;
 
 const generator = new ClientApiGenerator();
 
