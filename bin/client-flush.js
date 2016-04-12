@@ -163,7 +163,9 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
   var aggParams = [{{{aggParamsStr}}}];
   aggParams.forEach(function(key, index) {
     var value = arguments[index];
-    uri = uri.replace(':' + key, value);
+    if (typeof value !== 'undefined') {
+      uri = uri.replace(':' + key, value);
+    }
   });
   var url = '{{{baseUrl}}}' + uri;
   return request.getAsync({
