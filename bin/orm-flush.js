@@ -15,7 +15,7 @@ class OrmGenerator {
 
   constructor() {
     this.schema = joi.object().keys({
-      identify:   joi.string().required(),
+      identity:   joi.string().required(),
       connection: joi.string().required(),
       shardKey:   joi.string().required(),
       attributes: joi.object().required()
@@ -52,7 +52,7 @@ class OrmGenerator {
         break;
       }
 
-      if (targetOrms.length > 0 && targetOrms.indexOf(ormSpec.identify) === -1) {
+      if (targetOrms.length > 0 && targetOrms.indexOf(ormSpec.identity) === -1) {
         continue; // has target orms & not included, skip it
       }
 
@@ -61,24 +61,22 @@ class OrmGenerator {
   }
 
   process(path, spec) {
-    Promise.resolve(debug('[OrmGenerator] Processing %s ...', spec.identify)).then(() => {
+    Promise.resolve(debug('[OrmGenerator] Processing %s ...', spec.identity)).then(() => {
       return joiValidate(spec, this.schema);
     }).then((validatedSpec) => {
       let params = {
-        name:           validatedSpec.identify,
+        name:           validatedSpec.identity,
         shardKey:       validatedSpec.shardKey,
-        camelCaseName:  OrmGenerator.camelCase(validatedSpec.identify)
+        camelCaseName:  OrmGenerator.camelCase(validatedSpec.identity)
       };
 
       let specCopy = Object.assign({}, validatedSpec);
       delete specCopy['shardKey'];
-      params['schema'] = JSON.stringify(specCopy);
+      params['schema'] = JSON.stringify(specCopy, null, 2);
 
-      console.log(params);
-
-      return libFsp.writeFile(libPath.join(path, validatedSpec.identify + '-model.js'), this.template(params));
+      return libFsp.writeFile(libPath.join(path, validatedSpec.identity + '-model.js'), this.template(params));
     }).catch((err) => {
-      debug('[OrmGenerator] Failed in processing %s: %j', spec.identify, err);
+      debug('[OrmGenerator] Failed in processing %s: %j', spec.identity, err);
     });
   }
 
@@ -92,21 +90,21 @@ class OrmGenerator {
 
 const TemplateStr = `"use strict";
 
-const OrmHandler = require('sagitta').Instance.orm;
-const OrmModel = require('sagitta').Orm.OrmModel;
+const ormInstance = require('sagitta').Instance.orm;
+const OrmModel    = require('sagitta').Orm.OrmModel;
 
 class {{{camelCaseName}}}Model extends OrmModel {
 
   constructor() {
     this.name        = '{{{name}}}';
-    this.instance    = OrmHandler.getWaterlineModel(this.name);
+    this.instance    = ormInstance.getWaterlineModel(this.name);
     this.identifyKey = '{{{shardKey}}}';
     this.schema      = {{{schema}}};
   }
 
 }
 
-const model = new UserModel();
+const model = new {{{camelCaseName}}}Model();
 
 module.exports = model;`;
 
