@@ -11,15 +11,19 @@ const handlebars  = require('handlebars');
 const joi         = require('joi');
 const joiValidate = require('../src/utility/JoiValidate');
 
+const exec = require('eval');
+
 class ClientApiGenerator {
 
   constructor() {
     this.schema = joi.object().keys({
-      host: joi.string().required(),
-      protocol: joi.string().required().valid(['http', 'https'])
+      host:     joi.string().required(),
+      apiVer:   joi.string().required(),
+      protocol: joi.string().optional().valid(['http', 'https']).default('http'),
+      timeout:  joi.number().integer().optional().default(5000) // 5s
     });
     this.output = TemplateHead; // output client code aggregation
-    this.template = handlebars.compile(TemplateStr);
+    this.options = {};
   }
 
   run(path, outputPath, options) {
@@ -36,28 +40,19 @@ class ClientApiGenerator {
       debug('[ClientApiGenerator] OutputPath specified shall be an absolute path: %s', path); return;
     }
 
-    // load api spec
-    libFsp.writeFileSync(libPath.join(outputPath, 'sagitta-client.js'), output);
-  }
-
-  process(path, options) {
-    // load api spec
-    let spec = require(libPath.join(path, 'spec.js'));
-
-    while (true) {
-      let ormSpec = spec.shift();
-      if (!ormSpec) {
-        break;
-      }
-
-      output += this.process(host, ormSpec);
-    }
-
-    return new Promise((resolve, reject) => {
+    new Promise((resolve, reject) => {
       Promise.resolve(debug('[ClientApiGenerator] Validate client generation options ...')).then(() => {
         return joiValidate(options, this.schema);
       }).then((validatedOptioins) => {
-
+        this.options = validatedOptioins;
+        return this.process(path);
+      }).then((results) => {
+        results.forEach((result) => {
+          this.output += result;
+        });
+        libFsp.writeFile(libPath.join(outputPath, 'sagitta-client.js'), this.output);
+      }).then(() => {
+        debug('[ClientApiGenerator] All done ...');
       }).catch((err) => {
         console.log(err.stack);
         reject(reject);
@@ -65,8 +60,78 @@ class ClientApiGenerator {
     });
   }
 
-  processSingle(spec, options) {
+  process(path) {
+    let spec = require(libPath.join(path, 'spec.js'));
+    let queue = [];
 
+    while (true) {
+      let ormSpec = spec.shift();
+      if (!ormSpec) {
+        break;
+      }
+
+      queue.push(this.processSingle(ormSpec));
+    }
+
+    return Promise.all(queue);
+  }
+
+  processSingle(spec) {
+    debug('[ClientApiGenerator] Processing: %s', spec.name);
+    return new Promise((resolve) => {
+      let funcName = ClientApiGenerator.lcFirst(ClientApiGenerator.camelCase(spec.name));
+
+      // parse joi schema, get params info
+      let requiredParams = []; // [ paramName, ... ]
+      let optionalParams = []; // [ paramName, ... ]
+      let schema = exec(handlebars.compile(TemplateJoiSchema)({ schema: spec.schema }), true);
+      schema._inner.children.forEach((obj) => {
+        let key = obj.key;
+        let isRequired = obj.schema._flags.hasOwnProperty('presence') && obj.schema._flags.presence === 'required';
+        if (isRequired) {
+          requiredParams.push(key);
+        } else {
+          optionalParams.push(key);
+        }
+      });
+
+      // generate function params string
+      let funcParamsStr = '';
+      if (requiredParams.length > 0) {
+        funcParamsStr = requiredParams.join(', ');
+      }
+      if (funcParamsStr !== '' && optionalParams.length > 0) {
+        funcParamsStr += ', ' + optionalParams.join(', ');
+      } else if (optionalParams.length > 0) {
+        funcParamsStr = optionalParams.join(', ');
+      }
+
+      let template = '';
+      switch (spec.method) {
+        case 'get':
+          template = TemplateGet;
+          break;
+        case 'post':
+          template = TemplatePost;
+          break;
+        case 'put':
+          template = TemplatePut;
+          break;
+        case 'delete':
+          template = TemplateDelete;
+          break;
+        case 'patch':
+          template = TemplatePatch;
+          break;
+      }
+
+      resolve(handlebars.compile(template)(Object.assign({
+        funcName: funcName,
+        requiredParams: requiredParams,
+        optionalParams: optionalParams,
+        funcParamsStr: funcParamsStr
+      }, spec, this.options)));
+    });
   }
 
   static camelCase(s) {
@@ -81,19 +146,51 @@ class ClientApiGenerator {
 
 }
 
-function test() {
+const bluebird = require('bluebird');
+const request = bluebird.promisifyAll(require('request'));
 
+function userFetchSingle() {
+  return request.get({
+    // url:
+  });
 }
+
+const TemplateJoiSchema = `"use strict";
+const joi = require('joi');
+module.exports = {{{schema}}};
+`;
 
 const TemplateHead = `"use strict";
 
-const bluebird = require('bluebird');
-const request = blurbird.promisifyAll(require('request'));
+const request = require('sagitta').Utility.promisedRequest;
+const SagittaClient = function() {};
 
 `;
 
-const TemplateStr = ``;
+const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParams}}}) {
+  var uri = '{{{uri}}}';
+  var aggParams = [{{{funcParams}}}];
+  aggParams.forEach(function(key, index) {
+    var value = aggParams[index];
+    uri = uri.replace(':' + key, value);
+  });
+  var url = '{{{protocol}}}://{{{host}}}/api/{{{apiVer}}}{{{uri}}}';
+  return request.getAsync({
+    url: url,
+    timeout: {{{timeout}}}
+  });
+};
+`;
+const TemplatePost = ``;
+const TemplatePut = ``;
+const TemplateDelete = ``;
+const TemplatePatch = ``;
 
 const generator = new ClientApiGenerator();
 
-module.exports = generator;
+generator.run(libPath.join(__dirname, '../app/api/1.0'), __dirname, {
+  host: '127.0.0.1:3089',
+  apiVer: '1.0'
+});
+
+// module.exports = generator;
