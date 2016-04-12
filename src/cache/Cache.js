@@ -32,8 +32,8 @@ class Cache {
     });
   }
 
-  setModelHash(modelName, identify, queryString, data, expires) {
-    let key = Cache.genModelKey(modelName, identify);
+  setModelHash(modelName, identity, queryString, data, expires) {
+    let key = Cache.genModelKey(modelName, identity);
     return new Promise((resolve, reject) => {
       this.instance.pipeline()
         .hset(key, queryString, msgpack.encode(data))
@@ -50,9 +50,9 @@ class Cache {
     });
   }
 
-  getModelHash(modelName, identify, queryString) {
+  getModelHash(modelName, identity, queryString) {
     return new Promise((resolve, reject) => {
-      this.instance.hgetBuffer(Cache.genModelKey(modelName, identify), queryString).then((data) => {
+      this.instance.hgetBuffer(Cache.genModelKey(modelName, identity), queryString).then((data) => {
         resolve(msgpack.decode(data));
       }).catch((err) => {
         reject(err);
@@ -60,16 +60,16 @@ class Cache {
     });
   }
 
-  removeModelHash(modelName, identify) {
-    return this.instance.del(Cache.genModelKey(modelName, identify));
+  removeModelHash(modelName, identity) {
+    return this.instance.del(Cache.genModelKey(modelName, identity));
   }
 
   setExpire(key, expires) {
     return this.instance.expire(key, this.genExpire(expires));
   }
 
-  static genModelKey(modelName, identify) {
-    return `${modelName}:${identify}`;
+  static genModelKey(modelName, identity) {
+    return `${modelName}:${identity}`;
   }
 
   genExpire(expires) {

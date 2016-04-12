@@ -8,7 +8,7 @@ class OrmModel {
   constructor() {
     this.name         = '';   // model name
     this.instance     = null; // waterline model instance
-    this.identifyKey  = '';   // model identify attribute name
+    this.cacheKey     = '';   // model identity attribute name
     this.schema       = {};   // waterline model definition schema object
   }
 
@@ -20,12 +20,12 @@ class OrmModel {
     return this.schema;
   }
 
-  find(identify, query) {
+  find(identity, query) {
     let cacheHit = false;
     let queryString = JSON.encode(query);
 
     return new Promise((resolve, reject) => {
-      cache.getModelHash(this.name, identify, queryString).then((data) => {
+      cache.getModelHash(this.name, identity, queryString).then((data) => {
         if (data) {
           cacheHit = true;
           return Promise.resolve(data);
@@ -34,7 +34,7 @@ class OrmModel {
         }
       }).then((data) => {
         if (data && !cacheHit) {
-          return cache.setModelHash(this.name, identify, queryString);
+          return cache.setModelHash(this.name, identity, queryString);
         } else {
           return Promise.resolve(data);
         }
@@ -46,11 +46,11 @@ class OrmModel {
     });
   }
 
-  getIdentify(values) {
+  getCacheKeyVal(values) {
     if (Array.isArray(values)) {
-      return values[0][this.identifyKey];
+      return values[0][this.cacheKey];
     } else {
-      return values[this.identifyKey];
+      return values[this.cacheKey];
     }
   }
 
@@ -73,7 +73,7 @@ class OrmModel {
   }
 
   removeCacheAfterRecordChanged(data, next) {
-    cache.removeModelHash(this.name, this.getIdentify(data))
+    cache.removeModelHash(this.name, this.getCacheKeyVal(data))
       .then(_ => next())
       .catch((err) => {
         logger.error(err);

@@ -17,7 +17,7 @@ class OrmGenerator {
     this.schema = joi.object().keys({
       identity:   joi.string().required(),
       connection: joi.string().required(),
-      shardKey:   joi.string().required(),
+      cacheKey:   joi.string().required(),
       attributes: joi.object().required()
     });
 
@@ -66,12 +66,12 @@ class OrmGenerator {
     }).then((validatedSpec) => {
       let params = {
         name:           validatedSpec.identity,
-        shardKey:       validatedSpec.shardKey,
+        cacheKey:       validatedSpec.cacheKey,
         camelCaseName:  OrmGenerator.camelCase(validatedSpec.identity)
       };
 
       let specCopy = Object.assign({}, validatedSpec);
-      delete specCopy['shardKey'];
+      delete specCopy['cacheKey'];
       params['schema'] = JSON.stringify(specCopy, null, 2);
 
       return libFsp.writeFile(libPath.join(path, validatedSpec.identity + '-model.js'), this.template(params));
@@ -98,7 +98,7 @@ class {{{camelCaseName}}}Model extends OrmModel {
   constructor() {
     this.name        = '{{{name}}}';
     this.instance    = ormInstance.getWaterlineModel(this.name);
-    this.identifyKey = '{{{shardKey}}}';
+    this.cacheKey    = '{{{cacheKey}}}';
     this.schema      = {{{schema}}};
   }
 
