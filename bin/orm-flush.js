@@ -15,10 +15,9 @@ class OrmGenerator {
 
   constructor() {
     this.schema = joi.object().keys({
-      identity:   joi.string().required(),
-      connection: joi.string().required(),
-      cacheKey:   joi.string().required(),
-      attributes: joi.object().required()
+      name:     joi.string().required(),
+      cacheKey: joi.string().required(),
+      schema:   joi.string().required()
     });
 
     this.template = handlebars.compile(TemplateStr);

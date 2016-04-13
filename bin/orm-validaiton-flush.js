@@ -55,7 +55,6 @@ class OrmValidationGenerator {
 
 const TemplateStr = `"use strict";
 
-var joi             = require('sagitta').Utility.joi;
 var joiValidate     = require('sagitta').Utility.joiValidate;
 var waterlineToJoi  = require('sagitta').Utility.waterlineToJoi;
 
