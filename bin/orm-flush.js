@@ -52,7 +52,7 @@ class OrmGenerator {
         break;
       }
 
-      if (targetOrms.length > 0 && targetOrms.indexOf(ormSpec.identity) === -1) {
+      if (targetOrms.length > 0 && targetOrms.indexOf(ormSpec.name) === -1) {
         continue; // has target orms & not included, skip it
       }
 
@@ -61,22 +61,13 @@ class OrmGenerator {
   }
 
   process(path, spec) {
-    Promise.resolve(debug('[OrmGenerator] Processing %s ...', spec.identity)).then(() => {
+    Promise.resolve(debug('[OrmGenerator] Processing %s ...', spec.name)).then(() => {
       return joiValidate(spec, this.schema);
     }).then((validatedSpec) => {
-      let params = {
-        name:           validatedSpec.identity,
-        cacheKey:       validatedSpec.cacheKey,
-        camelCaseName:  OrmGenerator.camelCase(validatedSpec.identity)
-      };
-
-      let specCopy = Object.assign({}, validatedSpec);
-      delete specCopy['cacheKey'];
-      params['schema'] = JSON.stringify(specCopy, null, 2);
-
-      return libFsp.writeFile(libPath.join(path, validatedSpec.identity + '-model.js'), this.template(params));
+      validatedSpec['camelCaseName'] = OrmGenerator.camelCase(validatedSpec.name);
+      return libFsp.writeFile(libPath.join(path, validatedSpec.name + '-model.js'), this.template(validatedSpec));
     }).catch((err) => {
-      debug('[OrmGenerator] Failed in processing %s: %j', spec.identity, err);
+      debug('[OrmGenerator] Failed in processing %s: %j', spec.name, err);
     });
   }
 
@@ -90,14 +81,12 @@ class OrmGenerator {
 
 const TemplateStr = `"use strict";
 
-const ormInstance = require('sagitta').Instance.orm;
 const OrmModel    = require('sagitta').Orm.OrmModel;
 
 class {{{camelCaseName}}}Model extends OrmModel {
 
   constructor() {
     this.name        = '{{{name}}}';
-    this.instance    = ormInstance.getWaterlineModel(this.name);
     this.cacheKey    = '{{{cacheKey}}}';
     this.schema      = {{{schema}}};
   }

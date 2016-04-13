@@ -1,8 +1,5 @@
 "use strict";
 
-const libPath = require('path');
-const libFsp  = require('fs-promise');
-
 const WinstonTFile    = require('winston').transports.File;
 const WinstonTConsole = require('winston').transports.Console;
 const WinstonLogger   = require('winston').Logger;

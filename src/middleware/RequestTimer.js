@@ -1,6 +1,6 @@
 "use strict";
 
-const logger = require('../logger/Logger.js');
+const logger = require('../logger/Logger');
 
 class RequestTimer {
 

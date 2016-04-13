@@ -82,7 +82,7 @@ class ApiGenerator {
 
 const TemplateStr = `"use strict";
 
-const joi         = require('joi');
+const joi         = require('sagitta').Utility.joi;
 const joiValidate = require('sagitta').Utility.joiValidate;
 
 class {{{camelCaseName}}} {
