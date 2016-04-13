@@ -11,3 +11,9 @@ client model validation
 此外uri里的参数名必须和下面joi定义的参数名一致
 
 orm的spec里,waterline之外的属性有 cacheKey
+
+waterline的模型定义中的几个回调函数,应该清除缓存数据,如果有自己实现内容的话
+
+解释OrmModel里的带缓存函数find的相关业务
+
+koa context里的reqId
