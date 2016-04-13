@@ -27,7 +27,7 @@ class ClientApiGenerator {
   }
 
   run(path, outputPath, options) {
-    debug('[ClientApiGenerator] Start to process orm skeleton generation ...');
+    debug('[ClientApiGenerator] Start to process client api skeleton generation ...');
 
     // ensure path
     if (!libFsp.statSync(path).isDirectory()) {
@@ -154,8 +154,8 @@ module.exports = {{{schema}}};
 `;
 const TemplateHead = `"use strict";
 
-const request = require('sagitta').Utility.promisedRequest;
-const SagittaClient = function() {};
+var request = require('sagitta').Utility.promisedRequest;
+var SagittaClient = function() {};
 
 `;
 const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
