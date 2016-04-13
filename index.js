@@ -13,16 +13,19 @@ module.exports = {
     template: app.template
   },
   Bin: {
-    apiGenerator:     require('./bin/api-flush'),
-    clientGenerator:  require('./bin/client-flush'),
-    ormGenerator:     require('./bin/orm-flush')
+    apiGenerator:           require('./bin/api-flush'),
+    clientGenerator:        require('./bin/client-flush'),
+    ormGenerator:           require('./bin/orm-flush'),
+    ormValidationGenerator: require('./bin/orm-validaiton-flush')
   },
   Orm: {
     OrmModel: require('./src/orm/OrmModel')
   },
   Utility: {
+    joi:              require('./src/utility/Joi'),
     joiValidate:      require('./src/utility/JoiValidate'),
     promisedRequest:  require('./src/utility/PromisedRequest'),
-    promiseRetry:     require('./src/utility/PromiseRetry')
+    promiseRetry:     require('./src/utility/PromiseRetry'),
+    waterlineToJoi:   require('./src/utility/WaterlineToJoi')
   }
 };

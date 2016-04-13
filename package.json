@@ -31,6 +31,7 @@
     "sails-redis": "^0.10.7",
     "validator": "^5.1.0",
     "waterline": "^0.12.1",
+    "waterline-joi": "^1.0.12",
     "winston": "^2.2.0"
   },
   "devDependencies": {
