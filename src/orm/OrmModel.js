@@ -26,7 +26,7 @@ class OrmModel {
 
   find(identity, query) {
     let cacheHit = false;
-    let queryString = JSON.encode(query);
+    let queryString = JSON.stringify(query);
 
     return new Promise((resolve, reject) => {
       cache.getModelHash(this.name, identity, queryString).then((data) => {
@@ -38,7 +38,7 @@ class OrmModel {
         }
       }).then((data) => {
         if (data && !cacheHit) {
-          return cache.setModelHash(this.name, identity, queryString);
+          return cache.setModelHash(this.name, identity, queryString, data);
         } else {
           return Promise.resolve(data);
         }

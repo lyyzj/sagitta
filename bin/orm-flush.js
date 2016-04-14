@@ -61,7 +61,7 @@ class OrmGenerator {
 
   process(path, spec) {
     Promise.resolve(debug('[OrmGenerator] Processing %s ...', spec.name)).then(() => {
-      return joiValidate(spec, this.schema);
+      return joiValidate(spec, this.schema, {allowUnknown:true});
     }).then((validatedSpec) => {
       validatedSpec['camelCaseName'] = OrmGenerator.camelCase(validatedSpec.name);
       return libFsp.writeFile(libPath.join(path, validatedSpec.name + '-model.js'), this.template(validatedSpec));
@@ -85,6 +85,7 @@ const OrmModel = require('sagitta').Orm.OrmModel;
 class {{{camelCaseName}}}Model extends OrmModel {
 
   constructor() {
+    super();
     this.name        = '{{{name}}}';
     this.cacheKey    = '{{{cacheKey}}}';
     this.schema      = {{{schema}}};

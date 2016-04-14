@@ -63,7 +63,7 @@ class ApiGenerator {
 
   process(path, spec) {
     Promise.resolve(debug('[ApiGenerator] Processing %s ...', spec.name)).then(() => {
-      return joiValidate(spec, this.schema);
+      return joiValidate(spec, this.schema, {allowUnknown:true});
     }).then((validatedSpec) => {
       validatedSpec['camelCaseName'] = ApiGenerator.camelCase(validatedSpec.name);
       return libFsp.writeFile(libPath.join(path, validatedSpec.name + '.js'), this.template(validatedSpec));
@@ -102,7 +102,7 @@ class {{{camelCaseName}}} {
 
 function *validate(next) {
   let aggregatedParams = Object.assign({}, this.params, this.query, this.request.body);
-  yield joiValidate(aggregatedParams, api.schema);
+  yield joiValidate(aggregatedParams, api.schema, {allowUnknown:true});
   yield next;
 }
 
