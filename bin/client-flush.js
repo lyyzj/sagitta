@@ -42,7 +42,7 @@ class ClientApiGenerator {
 
     new Promise((resolve, reject) => {
       Promise.resolve(debug('[ClientApiGenerator] Validate client generation options ...')).then(() => {
-        return joiValidate(options, this.schema, {allowUnknown:true});
+        return joiValidate(options, this.schema, { allowUnknown: true });
       }).then((validatedOptioins) => {
         this.options = validatedOptioins;
         return this.process(path);
