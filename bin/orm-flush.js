@@ -89,6 +89,18 @@ class {{{camelCaseName}}}Model extends OrmModel {
     this.cacheKey    = '{{{cacheKey}}}';
     this.schema      = {{{schema}}};
   }
+  
+  afterCreate(createdValues, next) {
+    OrmModel.removeCacheAfterRecordChanged('{{{name}}}', '{{{cacheKey}}}', createdValues, next);
+  }
+
+  afterUpdate(updatedRecord, next) {
+    OrmModel.removeCacheAfterRecordChanged('{{{name}}}', '{{{cacheKey}}}', updatedRecord, next);
+  }
+
+  afterDestroy(deletedRecord, next) {
+    OrmModel.removeCacheAfterRecordChanged('{{{name}}}', '{{{cacheKey}}}', deletedRecord, next);
+  }
 
 }
 

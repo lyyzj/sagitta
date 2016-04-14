@@ -58,26 +58,22 @@ class OrmModel {
     }
   }
 
+  static getValByKey(key, values) {
+    if (Array.isArray(values)) {
+      return values[0][key];
+    } else {
+      return values[key];
+    }
+  }
+
   checkAfterChangeEventDefinition(eventName) {
     if (!this.schema.hasOwnProperty(eventName)) {
       this.schema[eventName] = this[eventName];
     }
   }
 
-  afterCreate(createdValues, next) {
-    this.removeCacheAfterRecordChanged(createdValues, next);
-  }
-
-  afterUpdate(updatedRecord, next) {
-    this.removeCacheAfterRecordChanged(updatedRecord, next);
-  }
-
-  afterDestroy(deletedRecord, next) {
-    this.removeCacheAfterRecordChanged(deletedRecord, next);
-  }
-
-  removeCacheAfterRecordChanged(data, next) {
-    cache.removeModelHash(this.name, this.getCacheKeyVal(data))
+  static removeCacheAfterRecordChanged(name, cacheKey, data, next) {
+    cache.removeModelHash(name, OrmModel.getValByKey(cacheKey, data))
       .then(_ => next())
       .catch((err) => {
         logger.error(err);
