@@ -80,7 +80,7 @@ class OrmGenerator {
 
 const TemplateStr = `"use strict";
 
-const OrmModel    = require('sagitta').Orm.OrmModel;
+const OrmModel = require('sagitta').Orm.OrmModel;
 
 class {{{camelCaseName}}}Model extends OrmModel {
 
