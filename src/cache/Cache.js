@@ -53,7 +53,10 @@ class Cache {
   getModelHash(modelName, identity, queryString) {
     return new Promise((resolve, reject) => {
       this.instance.hgetBuffer(Cache.genModelKey(modelName, identity), queryString).then((data) => {
-        resolve(msgpack.decode(data));
+        if (data !== null) {
+            data = msgpack.decode(data);
+        }
+        resolve(data);
       }).catch((err) => {
         reject(err);
       });
