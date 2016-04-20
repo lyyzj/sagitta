@@ -182,6 +182,10 @@ function handleParams(uri, params, aggParams, requiredParams) {
 
 `;
 const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var uri = '{{{uri}}}';
+  var aggParams = [{{{aggParamsStr}}}];
+  var requiredParams = [{{{requiredParamsStr}}}];
+
   var data = null;
   try {
     data = handleParams(uri, arguments, aggParams, requiredParams)
