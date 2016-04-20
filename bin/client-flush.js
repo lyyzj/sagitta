@@ -153,85 +153,43 @@ module.exports = {{{schema}}};
 const TemplateHead = `"use strict";
 
 var request = require('sagitta').Utility.promisedRequest;
-var _ = require('sagitta').Utility.underscore;
+var _       = require('sagitta').Utility.underscore;
+
 var SagittaClient = function() {};
 
 function handleParams(uri, params, aggParams, requiredParams) {
-  //define return param
-  var formData = {};
-  var retData = {};
-  var diffStr = '';
-  var collectRequire = [];
+  var data = {};
+
+  // replace ":param" in uri
   aggParams.forEach(function(key, index) {
     var value = params[index];
-    if (typeof value !== 'undefined') {
-        if (_.indexOf(requiredParams,key) >= 0 && value != '') {
-          collectRequire.push(key);
-        }
-        // if in uri 
-        if (uri.match(':' + key) !== null) {
-            uri = uri.replace(':' + key, value);
-        } else {
-            Object.defineProperty(formData, key, {
-                value: value,
-                writable: true,
-                enumerable: true,
-                configurable: true
-            }); 
-        }
+    if (typeof value === 'undefined') {
+      return;
+    }
+    if (_.indexOf(requiredParams, key) >= 0 && (value === '' || value === undefined)) {
+      throw new Error('Param ' + key + ' is required!');
+    }
+    // if in uri
+    if (uri.match(':' + key) !== null) {
+      uri = uri.replace(':' + key, value);
+    } else {
+      data[key] = value;
     }
   });
-  diffStr = diffParams(requiredParams, collectRequire);
-  Object.defineProperties(retData, {
-        "formData" : {
-            value: formData,
-            writable:true,
-            enumerable:true,
-            configurable:true
-        }, 
-        "uri" : {
-            value: uri,
-            writable:true,
-            enumerable:true,
-            configurable:true
-        }, 
-        "diffStr" : {
-            value: diffStr,
-            writable:true,
-            enumerable:true,
-            configurable:true
-        }
-    });
 
-  return retData;
-}
-
-function diffParams(requiredParams, compareParams) {
-  var diffParams = _.difference(requiredParams, compareParams);
-  var missingStr = "";
-  if (diffParams.length > 0) { 
-    for(var i in diffParams) {
-        missingStr += diffParams[i] + ",";
-    }
-  }
-
-  return missingStr;
+  return { uri: uri, data: data };
 }
 
 `;
 const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
-  var uri = '{{{uri}}}';
-  var aggParams = [{{{aggParamsStr}}}];
-  var params = arguments;
-  //add check required param
-  var requiredParams = [{{{requiredParamsStr}}}];
-  var retData = handleParams(uri,params, aggParams, requiredParams);
-
-  if (retData.diffStr != ''){
-    return Promise.reject(retData.diffStr + " params is missing");
+  var data = null;
+  try {
+    data = handleParams(uri, arguments, aggParams, requiredParams)
+  } catch (err) {
+    return Promise.reject(err);
   }
 
-  var url = '{{{baseUrl}}}' + retData.uri;
+  var url = '{{{baseUrl}}}' + data.uri;
   return request.getAsync({
     url: url,
     timeout: {{{timeout}}}
@@ -242,20 +200,20 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
 const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
-  var params = arguments;
-  //add check required param
   var requiredParams = [{{{requiredParamsStr}}}];
-  var retData = handleParams(uri,params, aggParams, requiredParams);
 
-  if (retData.diffStr != ''){
-    return Promise.reject(retData.diffStr + " params is missing");
+  var data = null;
+  try {
+    data = handleParams(uri, arguments, aggParams, requiredParams)
+  } catch (err) {
+    return Promise.reject(err);
   }
 
-  var url = '{{{baseUrl}}}' + retData.uri;
+  var url = '{{{baseUrl}}}' + data.uri;
 
   return request.postAsync({
     url: url,
-    body: retData.formData,
+    body: data.data,
     json: true,
     timeout: {{{timeout}}}
   });
@@ -265,19 +223,19 @@ const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{func
 const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
-  var params = arguments;
-  //add check required param
   var requiredParams = [{{{requiredParamsStr}}}];
-  var retData = handleParams(uri,params, aggParams, requiredParams);
 
-  if (retData.diffStr != ''){
-    return Promise.reject(retData.diffStr + " params is missing");
+  var data = null;
+  try {
+    data = handleParams(uri, arguments, aggParams, requiredParams)
+  } catch (err) {
+    return Promise.reject(err);
   }
 
-  var url = '{{{baseUrl}}}' + retData.uri;
+  var url = '{{{baseUrl}}}' + data.uri;
   return request.putAsync({
     url: url,
-    body: retData.formData,
+    body: data.data,
     json: true,
     timeout: {{{timeout}}}
   });
@@ -287,16 +245,16 @@ const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcP
 const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
-  var params = arguments;
-  //add check required param
   var requiredParams = [{{{requiredParamsStr}}}];
-  var retData = handleParams(uri,params, aggParams, requiredParams);
 
-  if (retData.diffStr != ''){
-    return Promise.reject(retData.diffStr + " params is missing");
+  var data = null;
+  try {
+    data = handleParams(uri, arguments, aggParams, requiredParams)
+  } catch (err) {
+    return Promise.reject(err);
   }
 
-  var url = '{{{baseUrl}}}' + retData.uri;
+  var url = '{{{baseUrl}}}' + data.uri;
   return request.delAsync({
     url: url,
     timeout: {{{timeout}}}
@@ -307,22 +265,21 @@ const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
 const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
-  var params = arguments;
-  //add check required param
   var requiredParams = [{{{requiredParamsStr}}}];
-  var retData = handleParams(uri,params, aggParams, requiredParams);
 
-  var formData = retData.formData;
-  //如果第二个参数为json对象
-  if (params.length == 2 && typeof params[1] === 'object') {
-     formData = params[1];
+  var data = null;
+  try {
+    data = handleParams(uri, arguments, aggParams, requiredParams)
+  } catch (err) {
+    return Promise.reject(err);
   }
 
-  if (retData.diffStr != ''){
-    return Promise.reject(retData.diffStr + " params is missing");
+  var formData = data.data;
+  if (arguments.length == 2 && typeof arguments[1] === 'object') {
+     formData = arguments[1];
   }
 
-  var url = '{{{baseUrl}}}' + retData.uri;
+  var url = '{{{baseUrl}}}' + data.uri;
   return request.patchAsync({
     url: url,
     body: formData,
@@ -336,4 +293,9 @@ const TemplateTail = `module.exports = new SagittaClient();`;
 
 const generator = new ClientApiGenerator();
 
-module.exports = generator;
+generator.run(__dirname, __dirname, {
+  host: '127.0.0.1',
+  apiVer: '1.0'
+});
+
+// module.exports = generator;
