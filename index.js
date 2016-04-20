@@ -26,6 +26,7 @@ module.exports = {
     joiValidate:      require('./src/utility/JoiValidate'),
     promisedRequest:  require('./src/utility/PromisedRequest'),
     promiseRetry:     require('./src/utility/PromiseRetry'),
-    waterlineToJoi:   require('./src/utility/WaterlineToJoi')
+    waterlineToJoi:   require('./src/utility/WaterlineToJoi'),
+    underscore:       require('./src/utility/underscore'),
   }
 };
