@@ -293,9 +293,4 @@ const TemplateTail = `module.exports = new SagittaClient();`;
 
 const generator = new ClientApiGenerator();
 
-generator.run(__dirname, __dirname, {
-  host: '127.0.0.1',
-  apiVer: '1.0'
-});
-
-// module.exports = generator;
+module.exports = generator;
