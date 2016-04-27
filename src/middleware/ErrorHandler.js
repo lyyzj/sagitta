@@ -19,7 +19,7 @@ class ErrorHandler {
         }
 
         if (status == 404) {
-          this.body = '请求的资源不存在';
+          this.body = 'Not found';
         }
       }
     };
