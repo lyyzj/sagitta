@@ -23,6 +23,7 @@ const koaQueryString  = require('koa-qs');
 const koaMidNotFoundHandler   = require('./middleware/NotFoundHandler');
 const koaMidRequestIdHandler  = require('./middleware/RequestIdHandler');
 const koaMidRequestTimer      = require('./middleware/RequestTimer');
+const koaMidErrorHandler      = require('./middleware/ErrorHandler');
 
 class App {
 
@@ -95,7 +96,8 @@ class App {
         }
 
         koaQueryString(this.app, 'extended');             // add query string parser
-        this.app.use(koaServe(this.conf.app.staticPath));     // static files serving
+        this.app.use(koaMidErrorHandler.register());      // error
+        this.app.use(koaServe(this.conf.app.staticPath)); // static files serving
         this.app.use(koaMidRequestIdHandler.register());  // add request id in app
         this.app.use(koaMidRequestTimer.register());      // request timer
         this.app.use(koaBodyParser());                    // post body parser
