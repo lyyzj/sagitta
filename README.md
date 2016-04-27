@@ -18,5 +18,5 @@ waterline的模型定义中的几个回调函数,应该清除缓存数据,如果
 
 koa context里的reqId
 
-客户端脚本在调用patch方法的时候除了按规定的scheme传递参数外，还可以传递PK和一个json的数据进行部分更新
-clientJs.patchComment(PK, jsonData)
+客户端脚本在调用patch方法的时候除了按规定的scheme传递参数外，还可以传递id和一个json的数据进行部分更新
+clientJs.patchComment(id, jsonData)
