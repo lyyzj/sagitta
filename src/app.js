@@ -23,6 +23,7 @@ const koaQueryString  = require('koa-qs');
 const koaMidNotFoundHandler   = require('./middleware/NotFoundHandler');
 const koaMidRequestIdHandler  = require('./middleware/RequestIdHandler');
 const koaMidRequestTimer      = require('./middleware/RequestTimer');
+const koaMidErrorHandler      = require('./middleware/ErrorHandler');
 
 class App {
 
@@ -54,9 +55,10 @@ class App {
       router:   this.router.schema,
       template: this.template.schema,
       app:      joi.object().keys({
-        host:       joi.string().ip().optional(),
-        port:       joi.number().integer().min(1).max(65535).optional().default(3000),
-        staticPath: joi.string().required()
+        host:        joi.string().ip().optional(),
+        port:        joi.number().integer().min(1).max(65535).optional().default(3000),
+        staticPath:  joi.string().required(),
+        errorHandle: joi.func().default(koaMidErrorHandler.register())
       }).required()
     });
 
@@ -95,12 +97,17 @@ class App {
         }
 
         koaQueryString(this.app, 'extended');             // add query string parser
-        this.app.use(koaServe(this.conf.app.staticPath));     // static files serving
+        this.app.use(this.conf.app.errorHandle);          // error handle
+        this.app.use(koaServe(this.conf.app.staticPath)); // static files serving
         this.app.use(koaMidRequestIdHandler.register());  // add request id in app
         this.app.use(koaMidRequestTimer.register());      // request timer
         this.app.use(koaBodyParser());                    // post body parser
         this.app.use(this.router.instance.routes());      // router
         this.app.use(koaMidNotFoundHandler.register());   // 404 handler
+        this.app.on('error', function(err, ctx) {
+          let logger  = require('./logger/Logger');
+          logger.error('Server error: %s', err);
+        });
 
         resolve();
       }).catch((err) => reject(err));
