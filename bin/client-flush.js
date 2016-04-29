@@ -13,6 +13,8 @@ const joiValidate = require('../src/utility/JoiValidate');
 
 const exec = require('eval');
 
+const PWD = __dirname;
+
 class ClientApiGenerator {
 
   constructor() {
@@ -51,6 +53,8 @@ class ClientApiGenerator {
           this.output += result;
         });
         libFsp.writeFile(libPath.join(outputPath, 'sagitta-client.js'), this.output + TemplateTail);
+        //copy ajax.js
+        libFsp.copy(libPath.join(PWD, "../src/third/ajax.js"), libPath.join(outputPath, 'sagitta-ajax.js'));
       }).then(() => {
         debug('[ClientApiGenerator] All done ...');
       }).catch((err) => {
@@ -150,10 +154,8 @@ const TemplateJoiSchema = `"use strict";
 const joi = require('joi');
 module.exports = {{{schema}}};
 `;
-const TemplateHead = `"use strict";
 
-var request = require('sagitta').Utility.promisedRequest;
-var _       = require('sagitta').Utility.underscore;
+const TemplateHead = `"use strict";
 
 var SagittaClient = function() {};
 
@@ -194,9 +196,17 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.getAsync({
-    url: url,
-    timeout: {{{timeout}}}
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url:      url,
+      cache:    false,
+      timeout:  {{{timeout}}},
+      method:   'GET'
+    }).done((res, status) => {
+      resolve({res: res, status: status});
+    }).fail((xhr, status, err) => {
+      reject({err: xhr.responseText, statusCode: xhr.status}); 
+    })
   });
 };
 
@@ -214,13 +224,20 @@ const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{func
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-
-  return request.postAsync({
-    url: url,
-    body: data.data,
-    json: true,
-    timeout: {{{timeout}}}
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url:      url,
+      cache:    false,
+      timeout:  {{{timeout}}},
+      method:   'POST',
+      data:     data.data 
+    }).done((res, status) => {
+      resolve({res: res, status: status});
+    }).fail((xhr, status, err) => {
+      reject({err: xhr.responseText, statusCode: xhr.status}); 
+    })
   });
+
 };
 
 `;
@@ -237,12 +254,20 @@ const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcP
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.putAsync({
-    url: url,
-    body: data.data,
-    json: true,
-    timeout: {{{timeout}}}
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url:      url,
+      cache:    false,
+      timeout:  {{{timeout}}},
+      method:   'PUT',
+      data:     data.data 
+    }).done((res, status) => {
+      resolve({res: res, status: status});
+    }).fail((xhr, status, err) => {
+      reject({err: xhr.responseText, statusCode: xhr.status}); 
+    })
   });
+
 };
 
 `;
@@ -259,10 +284,19 @@ const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.delAsync({
-    url: url,
-    timeout: {{{timeout}}}
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url:      url,
+      cache:    false,
+      timeout:  {{{timeout}}},
+      method:   'DELETE'
+    }).done((res, status) => {
+      resolve({res: res, status: status});
+    }).fail((xhr, status, err) => {
+      reject({err: xhr.responseText, statusCode: xhr.status}); 
+    })
   });
+
 };
 
 `;
@@ -284,11 +318,18 @@ const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.patchAsync({
-    url: url,
-    body: formData,
-    json: true,
-    timeout: {{{timeout}}}
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url:      url,
+      cache:    false,
+      timeout:  {{{timeout}}},
+      method:   'PATCH',
+      data:     formData 
+    }).done((res, status) => {
+      resolve({res: res, status: status});
+    }).fail((xhr, status, err) => {
+      reject({err: xhr.responseText, statusCode: xhr.status}); 
+    })
   });
 };
 
