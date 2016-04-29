@@ -168,7 +168,7 @@ function handleParams(uri, params, aggParams, requiredParams) {
     if (typeof value === 'undefined') {
       return;
     }
-    if (_.indexOf(requiredParams, key) >= 0 && (value === '' || value === undefined)) {
+    if (requiredParams.indexOf(key) >= 0 && (value === '' || value === undefined)) {
       throw new Error('Param ' + key + ' is required!');
     }
     // if in uri
