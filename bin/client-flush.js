@@ -13,8 +13,6 @@ const joiValidate = require('../src/utility/JoiValidate');
 
 const exec = require('eval');
 
-const PWD = __dirname;
-
 class ClientApiGenerator {
 
   constructor() {
@@ -53,8 +51,6 @@ class ClientApiGenerator {
           this.output += result;
         });
         libFsp.writeFile(libPath.join(outputPath, 'sagitta-client.js'), this.output + TemplateTail);
-        //copy ajax.js
-        libFsp.copy(libPath.join(PWD, "../src/third/ajax.js"), libPath.join(outputPath, 'sagitta-ajax.js'));
       }).then(() => {
         debug('[ClientApiGenerator] All done ...');
       }).catch((err) => {
@@ -157,6 +153,64 @@ module.exports = {{{schema}}};
 
 const TemplateHead = `"use strict";
 
+function sagittaAjax(options) {
+  options = options || {};
+  options.type = (options.type || 'GET').toUpperCase();
+  options.dataType = options.dataType || 'json';
+  var buildParam = function (condition) {
+    var data = null;
+    if (condition != null) {
+      if (typeof condition == 'string') {
+        data = condition;
+      }
+      if (typeof condition == 'object') {
+        var arr = [];
+        for (var dname in condition) {
+          var dvalue = condition[dname];
+          arr.push(dname + '=' + dvalue);
+        }
+        data = arr.join('&');
+      }
+    }
+    return data;
+  }
+  var url = options.url;
+  var params = buildParam(options.data);
+  var res;
+
+  if (window.XMLHttpRequest) {
+    var xhr = new XMLHttpRequest();
+  } else {
+    var xhr = new ActiveXObject('Microsoft.XMLHTTP');
+  }
+
+  return new Promise(function (resolve, reject){
+    if (options.type == 'GET' || options.type == 'DELETE') {
+      if (params !== null) {
+        url = url + + '?' + paramsl
+      }
+      xhr.open(options.type, url, true);
+    } else if (options.type == 'POST' || options.type == 'PUT' || options.type == 'PATCH') {
+      xhr.open(options.type, url, true);
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    }
+    xhr.send(params);
+    
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState == 4) {
+        var status = xhr.status;
+        res = {response: xhr.responseText, statusText: xhr.statusText, statusCode: xhr.status};
+        if (status >= 200 && status < 300) {
+          resolve(res);
+        } else {
+          reject(res);
+        }
+      }
+    }
+  });
+}
+
+
 var SagittaClient = function() {};
 
 function handleParams(uri, params, aggParams, requiredParams) {
@@ -196,17 +250,17 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return new Promise((resolve, reject) => {
-    $.ajax({
+  return new Promise(function(resolve, reject) {
+    sagittaAjax({
       url:      url,
-      cache:    false,
+      type:     'GET',
       timeout:  {{{timeout}}},
-      method:   'GET'
-    }).done((res, status) => {
-      resolve({res: res, status: status});
-    }).fail((xhr, status, err) => {
-      reject({err: xhr.responseText, statusCode: xhr.status}); 
-    })
+      dataType: 'json',
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
@@ -224,20 +278,19 @@ const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{func
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return new Promise((resolve, reject) => {
-    $.ajax({
+  return new Promise(function(resolve, reject) {
+    sagittaAjax({
       url:      url,
-      cache:    false,
+      type:     'POST',
       timeout:  {{{timeout}}},
-      method:   'POST',
-      data:     data.data 
-    }).done((res, status) => {
-      resolve({res: res, status: status});
-    }).fail((xhr, status, err) => {
-      reject({err: xhr.responseText, statusCode: xhr.status}); 
-    })
+      data:     data.data,
+      dataType: 'json'
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
-
 };
 
 `;
@@ -254,20 +307,19 @@ const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcP
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return new Promise((resolve, reject) => {
-    $.ajax({
+  return new Promise(function(resolve, reject) {
+    sagittaAjax({
       url:      url,
-      cache:    false,
+      type:     'PUT',
       timeout:  {{{timeout}}},
-      method:   'PUT',
-      data:     data.data 
-    }).done((res, status) => {
-      resolve({res: res, status: status});
-    }).fail((xhr, status, err) => {
-      reject({err: xhr.responseText, statusCode: xhr.status}); 
-    })
+      data:     data.data,
+      dataType: 'json'
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
-
 };
 
 `;
@@ -284,19 +336,18 @@ const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return new Promise((resolve, reject) => {
-    $.ajax({
+  return new Promise(function(resolve, reject) {
+    sagittaAjax({
       url:      url,
-      cache:    false,
+      type:     'DELETE',
       timeout:  {{{timeout}}},
-      method:   'DELETE'
-    }).done((res, status) => {
-      resolve({res: res, status: status});
-    }).fail((xhr, status, err) => {
-      reject({err: xhr.responseText, statusCode: xhr.status}); 
-    })
+      dataType: 'json',
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
-
 };
 
 `;
@@ -318,18 +369,18 @@ const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return new Promise((resolve, reject) => {
-    $.ajax({
+  return new Promise(function(resolve, reject) {
+    sagittaAjax({
       url:      url,
-      cache:    false,
+      type:     'PATCH',
       timeout:  {{{timeout}}},
-      method:   'PATCH',
-      data:     formData 
-    }).done((res, status) => {
-      resolve({res: res, status: status});
-    }).fail((xhr, status, err) => {
-      reject({err: xhr.responseText, statusCode: xhr.status}); 
-    })
+      data:     formData,
+      dataType: 'json'
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
