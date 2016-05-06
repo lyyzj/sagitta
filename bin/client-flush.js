@@ -153,7 +153,9 @@ module.exports = {{{schema}}};
 
 const TemplateHead = `"use strict";
 
-function sagittaAjax(options) {
+var SagittaClient = function() {};
+
+SagittaClient.prototype.ajax = function (options) {
   options = options || {};
   options.type = (options.type || 'GET').toUpperCase();
   options.dataType = options.dataType || 'json';
@@ -208,12 +210,9 @@ function sagittaAjax(options) {
       }
     }
   });
-}
+};
 
-
-var SagittaClient = function() {};
-
-function handleParams(uri, params, aggParams, requiredParams) {
+SagittaClient.prototype.handleParams = function (uri, params, aggParams, requiredParams) {
   var data = {};
 
   // replace ":param" in uri
@@ -235,23 +234,23 @@ function handleParams(uri, params, aggParams, requiredParams) {
 
   return { uri: uri, data: data };
 }
-
 `;
 const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
   return new Promise(function(resolve, reject) {
-    sagittaAjax({
+    _this.ajax({
       url:      url,
       type:     'GET',
       timeout:  {{{timeout}}},
@@ -266,20 +265,21 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
 
 `;
 const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
   return new Promise(function(resolve, reject) {
-    sagittaAjax({
+    _this.ajax({
       url:      url,
       type:     'POST',
       timeout:  {{{timeout}}},
@@ -295,20 +295,21 @@ const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{func
 
 `;
 const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
   return new Promise(function(resolve, reject) {
-    sagittaAjax({
+    _this.ajax({
       url:      url,
       type:     'PUT',
       timeout:  {{{timeout}}},
@@ -324,20 +325,21 @@ const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcP
 
 `;
 const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
   return new Promise(function(resolve, reject) {
-    sagittaAjax({
+    _this.ajax({
       url:      url,
       type:     'DELETE',
       timeout:  {{{timeout}}},
@@ -352,13 +354,14 @@ const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
 
 `;
 const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
@@ -370,7 +373,7 @@ const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
 
   var url = '{{{baseUrl}}}' + data.uri;
   return new Promise(function(resolve, reject) {
-    sagittaAjax({
+    _this.ajax({
       url:      url,
       type:     'PATCH',
       timeout:  {{{timeout}}},
