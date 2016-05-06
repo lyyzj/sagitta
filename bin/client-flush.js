@@ -150,14 +150,69 @@ const TemplateJoiSchema = `"use strict";
 const joi = require('joi');
 module.exports = {{{schema}}};
 `;
-const TemplateHead = `"use strict";
 
-var request = require('sagitta').Utility.promisedRequest;
-var _       = require('sagitta').Utility.underscore;
+const TemplateHead = `"use strict";
 
 var SagittaClient = function() {};
 
-function handleParams(uri, params, aggParams, requiredParams) {
+SagittaClient.prototype.ajax = function (options) {
+  options = options || {};
+  options.type = (options.type || 'GET').toUpperCase();
+  options.dataType = options.dataType || 'json';
+  var buildParam = function (condition) {
+    var data = null;
+    if (condition != null) {
+      if (typeof condition == 'string') {
+        data = condition;
+      }
+      if (typeof condition == 'object') {
+        var arr = [];
+        for (var dname in condition) {
+          var dvalue = condition[dname];
+          arr.push(dname + '=' + dvalue);
+        }
+        data = arr.join('&');
+      }
+    }
+    return data;
+  }
+  var url = options.url;
+  var params = buildParam(options.data);
+  var res;
+
+  if (window.XMLHttpRequest) {
+    var xhr = new XMLHttpRequest();
+  } else {
+    var xhr = new ActiveXObject('Microsoft.XMLHTTP');
+  }
+
+  return new Promise(function (resolve, reject){
+    if (options.type == 'GET' || options.type == 'DELETE') {
+      if (params !== null) {
+        url = url + + '?' + paramsl
+      }
+      xhr.open(options.type, url, true);
+    } else if (options.type == 'POST' || options.type == 'PUT' || options.type == 'PATCH') {
+      xhr.open(options.type, url, true);
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    }
+    xhr.send(params);
+    
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState == 4) {
+        var status = xhr.status;
+        res = {response: xhr.responseText, statusText: xhr.statusText, statusCode: xhr.status};
+        if (status >= 200 && status < 300) {
+          resolve(res);
+        } else {
+          reject(res);
+        }
+      }
+    }
+  });
+};
+
+SagittaClient.prototype.handleParams = function (uri, params, aggParams, requiredParams) {
   var data = {};
 
   // replace ":param" in uri
@@ -166,7 +221,7 @@ function handleParams(uri, params, aggParams, requiredParams) {
     if (typeof value === 'undefined') {
       return;
     }
-    if (_.indexOf(requiredParams, key) >= 0 && (value === '' || value === undefined)) {
+    if (requiredParams.indexOf(key) >= 0 && (value === '' || value === undefined)) {
       throw new Error('Param ' + key + ' is required!');
     }
     // if in uri
@@ -179,101 +234,134 @@ function handleParams(uri, params, aggParams, requiredParams) {
 
   return { uri: uri, data: data };
 }
-
 `;
 const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.getAsync({
-    url: url,
-    timeout: {{{timeout}}}
+  return new Promise(function(resolve, reject) {
+    _this.ajax({
+      url:      url,
+      type:     'GET',
+      timeout:  {{{timeout}}},
+      dataType: 'json',
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
 `;
 const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-
-  return request.postAsync({
-    url: url,
-    body: data.data,
-    json: true,
-    timeout: {{{timeout}}}
+  return new Promise(function(resolve, reject) {
+    _this.ajax({
+      url:      url,
+      type:     'POST',
+      timeout:  {{{timeout}}},
+      data:     data.data,
+      dataType: 'json'
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
 `;
 const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.putAsync({
-    url: url,
-    body: data.data,
-    json: true,
-    timeout: {{{timeout}}}
+  return new Promise(function(resolve, reject) {
+    _this.ajax({
+      url:      url,
+      type:     'PUT',
+      timeout:  {{{timeout}}},
+      data:     data.data,
+      dataType: 'json'
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
 `;
 const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.delAsync({
-    url: url,
-    timeout: {{{timeout}}}
+  return new Promise(function(resolve, reject) {
+    _this.ajax({
+      url:      url,
+      type:     'DELETE',
+      timeout:  {{{timeout}}},
+      dataType: 'json',
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
 `;
 const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{funcParamsStr}}}) {
+  var _this = this;
   var uri = '{{{uri}}}';
   var aggParams = [{{{aggParamsStr}}}];
   var requiredParams = [{{{requiredParamsStr}}}];
 
   var data = null;
   try {
-    data = handleParams(uri, arguments, aggParams, requiredParams)
+    data = _this.handleParams(uri, arguments, aggParams, requiredParams)
   } catch (err) {
     return Promise.reject(err);
   }
@@ -284,11 +372,18 @@ const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
   }
 
   var url = '{{{baseUrl}}}' + data.uri;
-  return request.patchAsync({
-    url: url,
-    body: formData,
-    json: true,
-    timeout: {{{timeout}}}
+  return new Promise(function(resolve, reject) {
+    _this.ajax({
+      url:      url,
+      type:     'PATCH',
+      timeout:  {{{timeout}}},
+      data:     formData,
+      dataType: 'json'
+    }).then(function(res) {
+      resolve(res);
+    }).catch(function(err) {
+      reject(err);
+    }); 
   });
 };
 
