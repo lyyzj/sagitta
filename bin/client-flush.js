@@ -158,7 +158,7 @@ var SagittaClient = function() {};
 SagittaClient.prototype.ajax = function (options) {
   options = options || {};
   options.type = (options.type || 'GET').toUpperCase();
-  options.dataType = options.dataType || 'json';
+  options.dataType = (options.dataType || 'json'). toLowerCase();
   var buildParam = function (condition) {
     var data = null;
     if (condition != null) {
@@ -201,7 +201,13 @@ SagittaClient.prototype.ajax = function (options) {
     xhr.onreadystatechange = function () {
       if (xhr.readyState == 4) {
         var status = xhr.status;
-        res = {response: xhr.responseText, statusText: xhr.statusText, statusCode: xhr.status};
+        var response = xhr.responseText;
+        if (options.dataType == 'json') {
+          response = JSON.parse(response); 
+        } else if (options.dataType == 'xml') {
+          response = xhr.responseXML;
+        }
+        res = {response: response, statusText: xhr.statusText, statusCode: xhr.status};
         if (status >= 200 && status < 300) {
           resolve(res);
         } else {
@@ -253,8 +259,7 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
     _this.ajax({
       url:      url,
       type:     'GET',
-      timeout:  {{{timeout}}},
-      dataType: 'json',
+      timeout:  {{{timeout}}}
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
@@ -283,8 +288,7 @@ const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{func
       url:      url,
       type:     'POST',
       timeout:  {{{timeout}}},
-      data:     data.data,
-      dataType: 'json'
+      data:     data.data
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
@@ -313,8 +317,7 @@ const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcP
       url:      url,
       type:     'PUT',
       timeout:  {{{timeout}}},
-      data:     data.data,
-      dataType: 'json'
+      data:     data.data
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
@@ -342,8 +345,7 @@ const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
     _this.ajax({
       url:      url,
       type:     'DELETE',
-      timeout:  {{{timeout}}},
-      dataType: 'json',
+      timeout:  {{{timeout}}}
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
@@ -377,8 +379,7 @@ const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
       url:      url,
       type:     'PATCH',
       timeout:  {{{timeout}}},
-      data:     formData,
-      dataType: 'json'
+      data:     formData
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
