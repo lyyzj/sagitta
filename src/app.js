@@ -20,10 +20,15 @@ const koaServe        = require('koa-static');
 const koaBodyParser   = require('koa-bodyparser');
 const koaQueryString  = require('koa-qs');
 
+const koaJWT          = require('koa-jwt');
+
 const koaMidNotFoundHandler   = require('./middleware/NotFoundHandler');
 const koaMidRequestIdHandler  = require('./middleware/RequestIdHandler');
 const koaMidRequestTimer      = require('./middleware/RequestTimer');
 const koaMidErrorHandler      = require('./middleware/ErrorHandler');
+const koaCorsHandler          = require('./middleware/CorsHandler');
+const koaVhostHandler         = require('./middleware/VhostHandler');
+const koaCompressHandler      = require('./middleware/CompressHandler');
 
 class App {
 
@@ -55,10 +60,16 @@ class App {
       router:   this.router.schema,
       template: this.template.schema,
       app:      joi.object().keys({
+        hostname:    joi.string().optional(),
         host:        joi.string().ip().optional(),
         port:        joi.number().integer().min(1).max(65535).optional().default(3000),
         staticPath:  joi.string().required(),
-        errorHandle: joi.func().default(koaMidErrorHandler.register())
+        errorHandle: joi.func().default(koaMidErrorHandler.register()),
+        enableJWT:   joi.boolean().optional(),
+        jwtSecret:   joi.string().optional(),
+        enableCors:  joi.boolean().optional(),
+        enableVhost: joi.boolean().optional(),
+        compressOpt: joi.object().optional()
       }).required()
     });
 
@@ -96,18 +107,51 @@ class App {
           throw new Error('[App] conf.app.staticPath have to be an absolute path!');
         }
 
-        koaQueryString(this.app, 'extended');             // add query string parser
-        this.app.use(this.conf.app.errorHandle);          // error handle
-        this.app.use(koaServe(this.conf.app.staticPath)); // static files serving
-        this.app.use(koaMidRequestIdHandler.register());  // add request id in app
-        this.app.use(koaMidRequestTimer.register());      // request timer
-        this.app.use(koaBodyParser());                    // post body parser
-        this.app.use(this.router.instance.routes());      // router
-        this.app.use(koaMidNotFoundHandler.register());   // 404 handler
+        koaQueryString(this.app, 'extended');                 // add query string parser
+        let enableCors = this.conf.app.enableCors || false;
+        if (enableCors === true) {
+          this.app.use(koaCorsHandler.register());            // enable Access-Control-Allow-Origin
+        }
+        let enableGzip = this.conf.app.enableGzip || true;
+        if (enableGzip === true) {                            // enable Gzip
+          this.app.use(koaCompressHandler.register(this.conf.app.compressOpt));  
+        }
+        this.app.use(this.conf.app.errorHandle);              // error handle
+        this.app.use(koaServe(this.conf.app.staticPath));     // static files serving
+        this.app.use(koaMidRequestIdHandler.register());      // add request id in app
+        this.app.use(koaMidRequestTimer.register());          // request timer
+        this.app.use(koaBodyParser({ formLimit: '400kb'}));   // post body parser
+        // add jwt if open jwt auth
+        let enableJWT = this.conf.app.enableJWT || false;
+        if (enableJWT === true) {
+          this.app.use(koaJWT({secret: this.conf.app.jwtSecret}));
+        }
+        this.app.use(this.router.instance.routes());          // router
+        let staticPath = this.conf.app.staticPath;
+        this.app.use(function *(next){
+          if (!this.path.match(/api/)) {
+            this.body = libFsp.readFileSync(staticPath + "/index.html", {'encoding': 'utf8'});
+            return;
+          }
+          yield next;
+        });
+        this.app.use(koaMidNotFoundHandler.register());       // 404 handler
         this.app.on('error', function(err, ctx) {
           let logger  = require('./logger/Logger');
           logger.error('Server error: %s', err);
         });
+
+        let enableVhost = this.conf.app.enableVhost || false;
+        if (enableVhost === true) {
+          let vhosts = [
+            {
+              host: this.conf.app.hostname,
+              app: this.app
+            } 
+          ];
+          this.app.use(koaVhostHandler.register(vhosts));
+        }
+
 
         resolve();
       }).catch((err) => reject(err));
