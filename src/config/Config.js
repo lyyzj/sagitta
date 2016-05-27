@@ -53,31 +53,33 @@ class Config {
 
   loadJson(fileName, path) {
     let pathValidated = path || this.path; // optional
-
-    // exists in cache
-    if (this.cache.hasOwnProperty(fileName)) {
-      return Promise.resolve(this.cache[fileName]);
-    }
-
-    // check file exists
-    let filePath = libPath.join(pathValidated, fileName);
-    libFsp.stat(filePath).then((stats) => {
-      if (!stats.isFile()) {
-        return Promise.reject(new Error(libUtil.format('[Config] File not found: %s', filePath)));
+    return new Promise((resolve, reject) => {
+      // exists in cache
+      if (this.cache.hasOwnProperty(fileName)) {
+        resolve(this.cache[fileName]);
       }
-    });
 
-    // read & parse file
-    libFsp.readFile(filePath).then((content) => {
-      try {
-        let jsonData = JSON.parse(content);
-        this.cache[fileName] = jsonData;
-        return Promise.resolve(jsonData);
-      } catch (err) {
-        return Promise.reject(err);
-      }
-    }).catch((err) => {
-      return Promise.reject(err);
+        // check file exists
+      let filePath = libPath.join(pathValidated, fileName);
+      libFsp.stat(filePath).then((stats) => {
+        if (!stats.isFile()) {
+          reject(new Error(libUtil.format('[Config] File not found: %s', filePath)));
+        }
+      });
+
+      // read & parse file
+      libFsp.readFile(filePath).then((content) => {
+        try {
+          let jsonData = JSON.parse(content);
+          this.cache[fileName] = jsonData;
+          resolve(jsonData);
+        } catch (err) {
+          reject(err);
+        }
+      }).catch((err) => {
+        reject(err);
+      });
+    
     });
   }
 

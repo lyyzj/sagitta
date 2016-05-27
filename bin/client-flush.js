@@ -17,10 +17,10 @@ class ClientApiGenerator {
 
   constructor() {
     this.schema = joi.object().keys({
-      host:     joi.string().required(),
-      apiVer:   joi.string().required(),
-      protocol: joi.string().optional().valid(['http', 'https']).default('http'),
-      timeout:  joi.number().integer().optional().default(5000) // 5s
+      host:      joi.string().required(),
+      apiVer:    joi.string().required(),
+      protocol:  joi.string().optional().valid(['http', 'https']).default('http'),
+      timeout:   joi.number().integer().optional().default(5000) // 5s
     });
     this.output = TemplateHead; // output client code aggregation
     this.options = {};
@@ -102,6 +102,21 @@ class ClientApiGenerator {
       let aggParamsStr = "'" + requiredParams.concat(optionalParams).join("', '") + "'";
 
       let requiredParamsStr = "'" + requiredParams.join("', '") + "'";
+      // enable JWT
+      let enableJWT = spec.enableJWT || false;
+      // add token param
+      if (enableJWT === true) {
+        if (funcParamsStr != '') {
+          funcParamsStr += ", token";
+        } else {
+          funcParamsStr = "token";
+        }
+        if (aggParamsStr == "''") {
+          aggParamsStr  = "'token'";
+        } else {
+          aggParamsStr  += ", 'token'";
+        }
+      }
 
       let template = '';
       switch (spec.method) {
@@ -129,6 +144,7 @@ class ClientApiGenerator {
         optionalParams: optionalParams,
         aggParamsStr: aggParamsStr,
         funcParamsStr: funcParamsStr,
+        enableJWT:enableJWT,
         baseUrl: `${this.options.protocol}://${this.options.host}/api/${this.options.apiVer}`
       }, spec, this.options)));
     });
@@ -169,14 +185,23 @@ SagittaClient.prototype.ajax = function (options) {
         var arr = [];
         for (var dname in condition) {
           var dvalue = condition[dname];
-          arr.push(dname + '=' + dvalue);
+          arr.push(encodeURIComponent(dname) + '=' + encodeURIComponent(dvalue));
         }
         data = arr.join('&');
       }
     }
     return data;
   }
+
   var url = options.url;
+  var token;
+  if (options.enableJWT === true && options.data.token) {
+    token = options.data.token;
+    delete options.data.token;
+  }
+  if (options.enableJWT === true && token == undefined) {
+    return Promise.reject("token is missing");
+  }
   var params = buildParam(options.data);
   var res;
 
@@ -189,32 +214,37 @@ SagittaClient.prototype.ajax = function (options) {
   return new Promise(function (resolve, reject){
     if (options.type == 'GET' || options.type == 'DELETE') {
       if (params !== null) {
-        url = url + + '?' + paramsl
+        url = url + '?' + params;
       }
       xhr.open(options.type, url, true);
     } else if (options.type == 'POST' || options.type == 'PUT' || options.type == 'PATCH') {
       xhr.open(options.type, url, true);
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     }
+    // enable jwt
+    if (token) {
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+    }
     xhr.send(params);
-    
+
     xhr.onreadystatechange = function () {
       if (xhr.readyState == 4) {
         var status = xhr.status;
         var response = xhr.responseText;
-        if (options.dataType == 'json') {
-          response = JSON.parse(response); 
-        } else if (options.dataType == 'xml') {
-          response = xhr.responseXML;
-        }
-        res = {response: response, statusText: xhr.statusText, statusCode: xhr.status};
         if (status >= 200 && status < 300) {
+          if (options.dataType == 'json') {
+            response = JSON.parse(response); 
+          } else if (options.dataType == 'xml') {
+            response = xhr.responseXML;
+          }
+          res = {response: response, statusText: xhr.statusText, statusCode: xhr.status};
           resolve(res);
         } else {
-          reject(res);
+          reject(response);
         }
       }
     }
+    
   });
 };
 
@@ -259,7 +289,9 @@ const TemplateGet = `SagittaClient.prototype.{{{funcName}}} = function({{{funcPa
     _this.ajax({
       url:      url,
       type:     'GET',
-      timeout:  {{{timeout}}}
+      timeout:  {{{timeout}}},
+      enableJWT:{{{enableJWT}}},
+      data:     data.data
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
@@ -288,6 +320,7 @@ const TemplatePost  = `SagittaClient.prototype.{{{funcName}}} = function({{{func
       url:      url,
       type:     'POST',
       timeout:  {{{timeout}}},
+      enableJWT:{{{enableJWT}}},
       data:     data.data
     }).then(function(res) {
       resolve(res);
@@ -317,6 +350,7 @@ const TemplatePut  = `SagittaClient.prototype.{{{funcName}}} = function({{{funcP
       url:      url,
       type:     'PUT',
       timeout:  {{{timeout}}},
+      enableJWT:{{{enableJWT}}},
       data:     data.data
     }).then(function(res) {
       resolve(res);
@@ -345,7 +379,9 @@ const TemplateDelete  = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
     _this.ajax({
       url:      url,
       type:     'DELETE',
-      timeout:  {{{timeout}}}
+      enableJWT:{{{enableJWT}}},
+      timeout:  {{{timeout}}},
+      data:     data.data
     }).then(function(res) {
       resolve(res);
     }).catch(function(err) {
@@ -379,6 +415,7 @@ const TemplatePatch   = `SagittaClient.prototype.{{{funcName}}} = function({{{fu
       url:      url,
       type:     'PATCH',
       timeout:  {{{timeout}}},
+      enableJWT:{{{enableJWT}}},
       data:     formData
     }).then(function(res) {
       resolve(res);

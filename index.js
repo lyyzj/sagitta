@@ -28,5 +28,6 @@ module.exports = {
     promiseRetry:     require('./src/utility/PromiseRetry'),
     waterlineToJoi:   require('./src/utility/WaterlineToJoi'),
     underscore:       require('./src/utility/underscore'),
+    JWT:              require('./src/utility/JWT'),
   }
 };

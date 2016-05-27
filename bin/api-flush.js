@@ -15,11 +15,12 @@ class ApiGenerator {
 
   constructor() {
     this.schema = joi.object().keys({
-      name:   joi.string().required().regex(/^[a-z\-0-9]+$/),
-      method: joi.string().required().valid(['get', 'post', 'put', 'delete', 'patch']),
-      uri:    joi.string().required(),
-      type:   joi.string().optional().default('application/json; charset=utf-8'),
-      schema: joi.string().required()
+      name:       joi.string().required().regex(/^[a-z\-0-9]+$/),
+      method:     joi.string().required().valid(['get', 'post', 'put', 'delete', 'patch']),
+      uri:        joi.string().required(),
+      type:       joi.string().optional().default('application/json; charset=utf-8'),
+      enableJWT:  joi.boolean().optional().default(false),
+      schema:     joi.string().required()
     });
 
     this.template = handlebars.compile(TemplateStr);
@@ -65,8 +66,41 @@ class ApiGenerator {
     Promise.resolve(debug('[ApiGenerator] Processing %s ...', spec.name)).then(() => {
       return joiValidate(spec, this.schema, { allowUnknown: true });
     }).then((validatedSpec) => {
+      // define api file name
+      let fileNamePrefix = validatedSpec.method + "-" + validatedSpec.name;
+      // check enableJWT property
+      if (validatedSpec['enableJWT'] === true) {
+        validatedSpec['checkJWT'] = `
+  if (api.enableJWT === true) {
+    let jwtSecret = require('sagitta').Instance.app.conf.app.jwtSecret || undefined;
+    let authorizations = ctx.headers.authorization.split(" ");
+    let decodeToken = require('sagitta').Utility.JWT.verify(authorizations[1], jwtSecret);
+    if (decodeToken === false) {
+      ctx.throw("no access", 403);
+    }
+  }
+`;
+      }
       validatedSpec['camelCaseName'] = ApiGenerator.camelCase(validatedSpec.name);
-      return libFsp.writeFile(libPath.join(path, validatedSpec.name + '.js'), this.template(validatedSpec));
+      let _this = this;
+      libFsp.readFile(libPath.join(path, fileNamePrefix + '.js'), 'utf8'). then(function(contents) {
+        let contentsArr = contents.split("\n");
+        let writeFlag = 1;
+        for (var i in contentsArr) {
+          if (contentsArr[i].indexOf('noCompile')>0) {
+            writeFlag = 0;
+          }
+        }
+        if (writeFlag === 1) {
+          return libFsp.writeFile(libPath.join(path, fileNamePrefix + '.js'), _this.template(validatedSpec));
+        }
+      })
+      .catch(function(err) {
+        // if file not exist
+        if (err.errno == -2) {
+          return libFsp.writeFile(libPath.join(path, fileNamePrefix + '.js'), _this.template(validatedSpec));
+        }
+      });
     }).catch((err) => {
       debug('[ApiGenerator] Failed in processing %s: %j', spec.name, err);
     });
@@ -80,7 +114,7 @@ class ApiGenerator {
 
 }
 
-const TemplateStr = `"use strict";
+const TemplateStr = `'use strict';
 
 const joi         = require('sagitta').Utility.joi;
 const joiValidate = require('sagitta').Utility.joiValidate;
@@ -88,10 +122,11 @@ const joiValidate = require('sagitta').Utility.joiValidate;
 class {{{camelCaseName}}} {
 
   constructor() {
-    this.method = '{{{method}}}';
-    this.uri    = '{{{uri}}}';
-    this.type   = '{{{type}}}';
-    this.schema = {{{schema}}};
+    this.method     = '{{{method}}}';
+    this.uri        = '{{{uri}}}';
+    this.type       = '{{{type}}}';
+    this.enableJWT  = {{{enableJWT}}}; 
+    this.schema     = {{{schema}}};
   }
 
   register() {
@@ -102,6 +137,7 @@ class {{{camelCaseName}}} {
 
 function *validate(next) {
   let aggregatedParams = Object.assign({}, this.params, this.query, this.request.body);
+  {{{checkJWT}}}
   yield joiValidate(aggregatedParams, api.schema, { allowUnknown: true });
   yield next;
 }
