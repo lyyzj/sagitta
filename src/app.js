@@ -19,14 +19,13 @@ const koaInstance     = koa();
 const koaServe        = require('koa-static');
 const koaBodyParser   = require('koa-bodyparser');
 const koaQueryString  = require('koa-qs');
-
+const koaCors         = require('koa-cors');
 const koaJWT          = require('koa-jwt');
 
 const koaMidNotFoundHandler   = require('./middleware/NotFoundHandler');
 const koaMidRequestIdHandler  = require('./middleware/RequestIdHandler');
 const koaMidRequestTimer      = require('./middleware/RequestTimer');
 const koaMidErrorHandler      = require('./middleware/ErrorHandler');
-const koaCorsHandler          = require('./middleware/CorsHandler');
 const koaVhostHandler         = require('./middleware/VhostHandler');
 const koaCompressHandler      = require('./middleware/CompressHandler');
 
@@ -109,8 +108,8 @@ class App {
 
         koaQueryString(this.app, 'extended');                 // add query string parser
         let enableCors = this.conf.app.enableCors || false;
-        if (enableCors === true) {
-          this.app.use(koaCorsHandler.register());            // enable Access-Control-Allow-Origin
+        if (enableCors === true) {                            // enable Access-Control-Allow-Origin
+          this.app.use(koaCors({ origin: '*' })); 
         }
         let enableGzip = this.conf.app.enableGzip || true;
         if (enableGzip === true) {                            // enable Gzip
