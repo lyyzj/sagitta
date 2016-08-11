@@ -15,6 +15,7 @@ module.exports = {
   Bin: {
     apiGenerator:           require('./bin/api-flush'),
     clientGenerator:        require('./bin/client-flush'),
+    serverGenerator:        require('./bin/server-flush'),
     ormGenerator:           require('./bin/orm-flush'),
     ormValidationGenerator: require('./bin/orm-validaiton-flush')
   },

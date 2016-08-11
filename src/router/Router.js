@@ -2,6 +2,7 @@
 
 const libPath = require('path');
 const libFsp  = require('fs-promise');
+const async   = require('async'); 
 
 const Router = require('koa-router');
 
@@ -12,39 +13,48 @@ class RouterLoader {
 
   constructor() {
     this.instance = null;
-
-    this.schema = joi.object().keys({
+    this.schema = joi.array().min(1).required();
+    this.subSchema = joi.object().keys({
       path:   joi.string().required(),
-      apiVer: joi.string().required()
+      prefix: joi.string().optional()
     });
   }
 
   initialize(conf) {
-    let validated = {};
+    let _this = this;
     return new Promise((resolve, reject) => {
-      joiValidate(conf, this.schema).then((_) => {
-        validated = _;
-        return libFsp.stat(validated.path);
-      }).then((stats) => {
-        if (!stats.isDirectory()) {
-          throw new Error('[RouterLoader] conf.path have to be a valid path!');
-        } else if (!libPath.isAbsolute(validated.path)) {
-          throw new Error('[RouterLoader] conf.path have to be an absolute path!');
-        }
-        return libFsp.readdir(validated.path);
-      }).then((files) => {
-        this.instance = new Router({
-          prefix: '/api/' + validated.apiVer
-        });
-        for (let file of files) {
-          if (file === 'spec.js') {
-            continue; // spec definition, skip it
+      _this.instance = new Router();
+      for (var i in conf) {
+        let subConf = conf[i];
+        joiValidate(subConf, _this.subSchema, { allowUnknown: true }).then((_) => {
+          return libFsp.stat(subConf.path);
+        }).then((stats) => {
+          if (!stats.isDirectory()) {
+            throw new Error('[RouterLoader] conf.path have to be a valid path!');
+          } else if (!libPath.isAbsolute(subConf.path)) {
+            throw new Error('[RouterLoader] conf.path have to be an absolute path!');
           }
-          let api = require(libPath.join(validated.path, file));
-          this.instance[api.method].apply(this.instance, api.register());
-        }
-        resolve();
-      }).catch(err => reject(err));
+          return libFsp.readdir(subConf.path);
+        }).then((files) => {
+          for (let file of files) {
+            if (file === 'spec.js') {
+              continue; // spec definition, skip it
+            }
+            let scriptPath = libPath.join(subConf.path, file);
+            let api = require(libPath.join(subConf.path, file));
+            let funcs = api.register();
+            if (subConf.prefix === undefined) {
+              subConf.prefix = "";
+            }
+            funcs[0] = subConf.prefix + funcs[0];
+            _this.instance[api.method].apply(_this.instance, funcs);
+          }
+        }).catch(err => {
+            console.log(err);
+            reject(err)
+        });
+      }
+      resolve();
     });
   }
 

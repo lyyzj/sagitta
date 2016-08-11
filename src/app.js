@@ -134,6 +134,10 @@ class App {
           }
           yield next;
         });
+        this.app.use(function *(next){
+          serverRender.default(this.app.request, this.app.response);
+          yield next;
+        });
         this.app.use(koaMidNotFoundHandler.register());       // 404 handler
         this.app.on('error', function(err, ctx) {
           let logger  = require('./logger/Logger');
